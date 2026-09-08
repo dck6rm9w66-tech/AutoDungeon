@@ -328,6 +328,13 @@ body:not(.nofa) svg.slotico{display:none}
 @keyframes bob{50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){.grave.now .pin{animation:none}}
 .pathlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--dim);margin-top:4px}
+.mountbox{display:flex;gap:11px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:12px;padding:10px}
+.mountbox canvas{width:66px;height:48px;flex:0 0 auto;image-rendering:pixelated;border-radius:9px;
+  background:linear-gradient(180deg,#241f38,#171226);border:1px solid var(--line)}
+.mountbox .mbody{flex:1;min-width:0}
+.mountbox .mbody b{display:block;font-size:13.5px}
+.mountbox .mbody small{display:block;color:var(--muted);font-size:11px;line-height:1.4;margin-top:2px}
 /* ---------- Ahnengalerie ---------- */
 .ahn{display:flex;gap:11px;background:linear-gradient(180deg,#242038,#1a172a);
   border:1px solid var(--line);border-radius:13px;padding:11px;margin-bottom:9px}
@@ -537,6 +544,23 @@ const SFX=new AudioEngine();
    eine praktisch unbegrenzte Gegner-Vielfalt.
    ========================================================================== */
 const MODELS={
+mount_horse:["................","................","..........1111..",".........133331.",".........136331.","..11.....1333311",".13311111333311.",".13333333333331.",".13333333333331.","..1333333333331.","..13.1331.1331..","..13.1331.1331..","..13.1331.1331..","..11.1111.1111..","................","................"],
+mount_tiger:["................","................",".........11.11..","........13333311","..11....13663331",".133111133333311",".13333333333331.",".14434434433431.","..1333333333331.","..133333333331..","..133.1331.331..","..133.1331.331..","..111.1111.111..","................","................","................"],
+mount_lizard:["................","................","................",".........111111.","........13333331","1......133666331","1311111333333331",".13333333333331.","..1333333333331.","..13.1331.1331..","..13.1331.1331..","..11.1111.1111..","................","................","................","................"],
+mount_griffin:["................","..1..........11.",".141........1331","14411......13663","144411....133331",".144411111333311","..14444443333331","...1444433333331","....14443333331.","....1443333331..","....13.1331.31..","....13.1331.31..","....11.1111.11..","................","................","................"],
+trap_spikes:["................","................","................","................","..5..5..5..5..5.",".15.15.15.15.15.",".15.15.15.15.15.","155155155155155.","144444444444441.","144444444444441.","................","................","................","................","................","................"],
+trap_darts:["................","..111........111","..141........141","..141..6666..141","..141........141","..141..6666..141","..141........141","..141..6666..141","..141........141","..141........141","..141........141","..111........111","................","................","................","................"],
+trap_bear:["................","................","................","................","................","..1111....1111..","..1551....1551..",".155551..155551.",".14411111114411.","1444444444444441",".14444444444441.","..111111111111..","................","................","................","................"],
+trap_flame:["................","................","......66........",".....666.66.....","....6666.666....","....6666.666....","...66666.6666...","...66666.6666...","....666...66....","..114444444411..","..144444444441..","..144777774441..","..111111111111..","................","................","................"],
+trap_frost:["................","................","....6...6...6...","...666.666.666..","....6...6...6...","..6...6...6...6.",".666.666.666.666","..6...6...6...6.","................","..113333333311..","..133333333331..","..133777773331..","..111111111111..","................","................","................"],
+trap_curse:["................","................","......6666......","....66....66....","...6..6666..6...","..6..66..66..6..","..6.66....66.6..","..6.6..66..6.6..","..6.66....66.6..","..6..66..66..6..","...6..6666..6...","....66....66....","......6666......","................","................","................"],
+object_fountain:["................","................","......6..6......",".....66..66.....","....666..666....","....6666666.....","...1666666661...","..166666666661..",".13333333333331.",".13666666666631.",".13333333333331.","..133333333331..","..144444444441..","..144444444441..",".144444444444441",".111111111111111"],
+boon_might:["................","......1111......","....11333311....","...1333333331...","..133333333331..",".133336..633331.",".13333666633331.",".133336..633331.",".133336..633331.","..133333333331..","...1333333331...","....11333311....","......1111......","................","................","................"],
+boon_haste:["................","......1111......","....11333311....","...1333333331...","..133333333331..",".13333..6633331.",".13333.66.33331.",".1333366..33331.",".13333..6.33331.","..133333333331..","...1333333331...","....11333311....","......1111......","................","................","................"],
+boon_ward:["................","......1111......","....11333311....","...1333333331...","..133333333331..",".13333666633331.",".133336..633331.",".133336..633331.",".13333.66.33331.","..133333333331..","...1333333331...","....11333311....","......1111......","................","................","................"],
+boon_blood:["................","......1111......","....11333311....","...1333333331...","..133333333331..",".13333.66.33331.",".13333666633331.",".13333666633331.",".13333.66.33331.","..133333333331..","...1333333331...","....11333311....","......1111......","................","................","................"],
+boon_fortune:["................","......1111......","....11333311....","...1333333331...","..133333333331..",".133336..633331.",".13333.66.33331.",".13333.66.33331.",".133336..633331.","..133333333331..","...1333333331...","....11333311....","......1111......","................","................","................"],
+boon_edge:["................","......1111......","....11333311....","...1333333331...","..133333333331..",".13333...633331.",".13333..6633331.",".13333.66.33331.",".1333366..33331.","..133333333331..","...1333333331...","....11333311....","......1111......","................","................","................"],
 hero_warrior:["......1111......",".....177771.....","....17777771....","....17111171....","....17777771....","....17777771....",".....177771.....","......1771......","...1177777711...","..177744447771..",".17774444447771.",".17744444444771.","..174444444471..","...1744444471...","...177....771...","..1777....7771.."],
 hero_mage:[".......11.......","......1331......",".....133331.....","....13333331....","...1333333331...","....15555551....","....15115511....",".....155551.....","....11222211....","...1222222221...","..122222222221..",".12226666622221.",".12222222222221.","..122222222221..",".12222222222221.",".11111111111111."],
 hero_rogue:["......1111......",".....144441.....","....14444441....","....14466441....","....14444441....",".....144441.....","......1441......","...1144444411...","..144222222441..",".14422222222441.","..142222222241..","...1422222241...","....14222241....","...122....221...","...122....221...","..1222....2221.."],
@@ -1299,6 +1323,42 @@ const META=[
 ];
 
 /* ============================================================================
+   6a. WELTOBJEKTE — Reittiere, Fallen, Lebensbrunnen, zeitweilige Segen
+   ========================================================================== */
+const MOUNTS=[
+  {k:"horse",  n:"Schlachtross",   sp:"mount_horse",  cd:150,skip:5000,
+   d:"Ausdauernd und verlässlich.", bonus:{gf:12}, bt:"+12 % Goldfund"},
+  {k:"tiger",  n:"Säbelzahntiger", sp:"mount_tiger",  cd:135,skip:5000,
+   d:"Reißt alles nieder, was im Weg steht.", bonus:{crit:5}, bt:"+5 % kritische Chance"},
+  {k:"lizard", n:"Reitechse",      sp:"mount_lizard", cd:165,skip:5000,
+   d:"Gepanzert und unbeirrbar.", bonus:{armor:40}, bt:"+40 Rüstung"},
+  {k:"griffin",n:"Greif",          sp:"mount_griffin",cd:115,skip:6000,
+   d:"Überfliegt ganze Landstriche.", bonus:{aspd:8}, bt:"+8 % Angriffstempo"}
+];
+const TRAPS=[
+  {k:"spikes",n:"Stachelgrube", sp:"trap_spikes",col:"#c9c4d8",
+   d:"Verborgene Klingen im Boden."},
+  {k:"darts", n:"Giftpfeile",   sp:"trap_darts", col:"#7cd66a",
+   d:"Pfeile aus der Wand, benetzt mit Gift."},
+  {k:"bear",  n:"Bärenfalle",   sp:"trap_bear",  col:"#b89268",
+   d:"Eiserne Kiefer, die zuschnappen und festhalten."},
+  {k:"flame", n:"Feuerfalle",   sp:"trap_flame", col:"#ff7a2b",
+   d:"Eine Stichflamme aus dem Boden."},
+  {k:"frost", n:"Frostgeysir",  sp:"trap_frost", col:"#9fd8ff",
+   d:"Eisiger Dampf, der die Glieder lähmt."},
+  {k:"curse", n:"Fluchrune",    sp:"trap_curse", col:"#bd93f9",
+   d:"Ein altes Zeichen, das Rüstung und Beutel leert."}
+];
+const BOONS=[
+  {k:"might",  n:"Segen der Stärke",  sp:"boon_might",  col:"#ff8a7a",e:{dmgpct:45}},
+  {k:"haste",  n:"Segen der Eile",    sp:"boon_haste",  col:"#8be9fd",e:{aspd:35}},
+  {k:"ward",   n:"Segen des Schutzes",sp:"boon_ward",   col:"#5aa9ff",e:{dr:14,armor:70}},
+  {k:"blood",  n:"Segen des Blutes",  sp:"boon_blood",  col:"#ff5566",e:{leech:9}},
+  {k:"fortune",n:"Segen des Glücks",  sp:"boon_fortune",col:"#ffc861",e:{gf:70,mf:55}},
+  {k:"edge",   n:"Segen der Schärfe", sp:"boon_edge",   col:"#f1fa8c",e:{crit:16,critdmg:45}}
+];
+
+/* ============================================================================
    6b. BIOME — jede Umgebung bringt eigene Silhouetten, Farben und Stimmung
    ========================================================================== */
 const BIOMES=[
@@ -1352,6 +1412,8 @@ class Hero extends Entity{
     this.tint=ri(-22,22);            // jeder Held trägt eine eigene Farbnuance
     this.look=ri(0,3);               // eines von vier Erscheinungsbildern seiner Rasse
     this.status={poison:0,poisonDmg:0,burn:0,slow:0};
+    this.boons=[];                   // zeitweilige Segen
+    this.mount=null;                 // Reittier, kommt nach dem ersten Boss
     this.kills=0;this.bossKills=0;this.shardsRun=0;this.dmgDone=0;
     this.recompute();this.hp=this.maxHp;
   }
@@ -1383,6 +1445,12 @@ class Hero extends Entity{
     }
     const R=this.relics||relicBonuses();    // geweihte Runen der Ahnen
     for(const k in R.rune)e[k]=(e[k]||0)+R.rune[k];
+    for(const b of this.boons||[]){         // zeitweilige Segen
+      for(const k in b.e)e[k]=(e[k]||0)+b.e[k];
+    }
+    if(this.mount){                         // dauerhafter Bonus des Reittiers
+      for(const k in this.mount.bonus)e[k]=(e[k]||0)+this.mount.bonus[k];
+    }
     return e;
   }
   /** Prüft, ob der Held einen Gegenstand tragen darf */
@@ -1573,6 +1641,7 @@ class Game{
     this.biome=BIOMES[0];this.biomeLeft=6;this.prevBiome=null;this.blend=1;
     this.layers=this.buildLayers();
     this.hitStop=0;this.lootGlow=0;this.autoEquip=false;
+    this.props=[];this.propT=18;this.mountCd=0;this.rideT=0;
     this.last=performance.now();
     requestAnimationFrame(t=>this.frame(t));
   }
@@ -1666,7 +1735,8 @@ class Game{
     this._heirGemN=this.heirGems.length;this._heirGoldN=this.heirGold;
     this.heirlooms=[];this.heirGems=[];this.heirGold=0;
     this.zone=1;this.dist=0;this.nextEncounter=130;this.enemy=null;this.enemies=[];
-    this.totalDist=0;this.bossMarks=[];this.changeBiome(true);
+    this.totalDist=0;this.bossMarks=[];this.props=[];this.propT=rnd(10,20);
+    this.mountCd=0;this.rideT=0;this.changeBiome(true);
     this.shop=null;   // Händlerwaren richten sich nach dem neuen Helden
     UI.sel=null;UI.selSkill=null;
     this.state="walk";this.lastBoss=0;this.bossPending=false;
@@ -1730,11 +1800,29 @@ class Game{
     // Regeneration (Unique / Trank-Automatik)
     if(h.hasUniq("regen"))h.hp=Math.min(h.maxHp,h.hp+h.maxHp*.01*dt);
     if(h.regen)h.hp=Math.min(h.maxHp,h.hp+h.maxHp*h.regen/100*dt);
+    if(this.mountCd>0)this.mountCd-=dt;
+    if(this.rideT>0){                        // Ritt: der Boden fliegt vorbei
+      this.rideT-=dt;
+      this.scroll+=520*dt;h.anim+=dt*22;
+      if(this.rideT<=0)UI.renderAll();
+    }
+    if(h.boons.length){                      // Segen laufen ab
+      let changed=false;
+      for(let i=h.boons.length-1;i>=0;i--){
+        h.boons[i].t-=dt;
+        if(h.boons[i].t<=0){
+          UI.log(h.boons[i].n+" ist verklungen.","sys");
+          h.boons.splice(i,1);changed=true;
+        }
+      }
+      if(changed){h.recompute();UI.renderAll();}
+    }
     if(h.hp/h.maxHp<.32&&h.potions>0&&this.state==="fight")this.usePotion();
 
     if(this.state==="walk"){
       const spd=52;
       this.scroll+=spd*dt;this.dist+=spd*dt;
+      this.updateProps(dt,spd);
       this.totalDist+=spd*dt;                        // zurückgelegte Wegstrecke
       h.hp=Math.min(h.maxHp,h.hp+h.maxHp*.017*dt);   // Erholung zwischen den Kämpfen
       h.anim+=dt*9;
@@ -1780,6 +1868,133 @@ class Game{
     UI.updateBars();
   }
   doShake(t,mag){if(t>this.shake){this.shake=t;this.shakeMag=mag;}}
+  /* ---------- Weltobjekte: Fallen, Brunnen, Segen ---------- */
+  /** Setzt in Abständen ein Objekt auf den Weg und wertet Berührungen aus */
+  updateProps(dt,spd){
+    const h=this.hero;
+    this.propT-=dt;
+    if(this.propT<=0){
+      this.propT=rnd(14,30);
+      const r=Math.random();
+      let kind,data;
+      if(r<.42){kind="trap";data=pick(TRAPS);}
+      else if(r<.74){kind="boon";data=pick(BOONS);}
+      else{kind="well";data={n:"Lebensbrunnen",sp:"object_fountain",col:"#5ce08a"};}
+      this.props.push({kind,data,x:456,hit:false});
+    }
+    for(let i=this.props.length-1;i>=0;i--){
+      const p=this.props[i];
+      p.x-=spd*dt;
+      if(!p.hit&&p.x<=126){p.hit=true;this.triggerProp(p);}
+      if(p.x<-40)this.props.splice(i,1);
+    }
+  }
+  /** Wirkung eines Objekts, sobald der Held es erreicht */
+  triggerProp(p){
+    const h=this.hero;
+    if(p.kind==="well"){
+      const heal=Math.round(h.maxHp*.45);
+      h.hp=Math.min(h.maxHp,h.hp+heal);
+      h.status.poison=0;h.status.slow=0;h.recompute();
+      this.fct.add(126,GROUND-64,"+"+heal,"heal");
+      this.parts.ring(126,GROUND-40,"#5ce08a");
+      this.parts.puff(126,GROUND-46,"#9df3dc");
+      UI.log("Lebensbrunnen: "+heal+" Leben wiederhergestellt, Zustände geheilt.","heal");
+      SFX.loot();
+      return;
+    }
+    if(p.kind==="boon"){
+      const b=p.data;
+      const dur=45+Math.round(h.level*1.2);
+      const at=h.boons.findIndex(x=>x.k===b.k);
+      if(at>=0)h.boons[at].t=dur;
+      else h.boons.push({k:b.k,n:b.n,e:b.e,col:b.col,t:dur,max:dur});
+      h.recompute();
+      this.fct.add(126,GROUND-70,b.n,"loot");
+      this.parts.ring(126,GROUND-44,b.col);
+      UI.log(b.n+" aufgenommen \u2014 "+effLines(b.e,1).join(", ")+" für "+dur+" s.","lvl");
+      SFX.levelup();UI.renderAll();
+      return;
+    }
+    // Falle: Geschick entscheidet über das Ausweichen
+    const t=p.data;
+    const dodge=clamp(8+h.dex*.35,0,60);
+    if(Math.random()*100<dodge){
+      this.fct.add(126,GROUND-64,"Ausgewichen","block");
+      this.parts.sparks(126,GROUND-30);
+      UI.log(t.n+" ausgewichen.","sys");
+      SFX.block();
+      return;
+    }
+    const base=Math.round((10+h.level*4.5)*rnd(.85,1.25));
+    this.doShake(.28,3.5);SFX.hurt();
+    if(t.k==="spikes"){
+      this.damageHero(Math.round(base*1.3),t.n,true);
+      this.parts.blood(126,GROUND-24,-Math.PI/2);
+    }else if(t.k==="darts"){
+      this.damageHero(Math.round(base*.6),t.n,true);
+      h.status.poison=8;h.status.poisonDmg=Math.max(1,Math.round(base*.22));
+      UI.log(t.n+": vergiftet für 8 Sekunden.","bad");
+    }else if(t.k==="bear"){
+      this.damageHero(base,t.n,true);
+      h.status.slow=6;h.recompute();
+      UI.log(t.n+": festgesetzt, Angriffstempo gesenkt.","bad");
+    }else if(t.k==="flame"){
+      this.damageHero(Math.round(base*.8),t.n,true);
+      h.status.poison=Math.max(h.status.poison,5);
+      h.status.poisonDmg=Math.max(h.status.poisonDmg,Math.round(base*.3));
+      this.parts.add(126,GROUND-30,18,{spdMin:20,spdMax:90,lifeMin:.3,lifeMax:.8,
+        col:()=>pick(["#ff8a2b","#ffc861"]),size:2,g:-40,glow:1});
+      UI.log(t.n+": Flammen brennen weiter.","bad");
+    }else if(t.k==="frost"){
+      this.damageHero(Math.round(base*.5),t.n,true);
+      h.status.slow=8;h.recompute();
+      this.parts.puff(126,GROUND-34,"#9fd8ff");
+      UI.log(t.n+": eisige Starre, Angriffstempo gesenkt.","bad");
+    }else{
+      this.damageHero(Math.round(base*.7),t.n,true);
+      const lost=Math.min(h.gold,Math.round(h.gold*.15));
+      h.gold-=lost;
+      h.boons.push({k:"curse",n:"Fluch",e:{armor:-Math.round(30+h.level*3)},
+        col:"#bd93f9",t:25,max:25});
+      h.recompute();
+      this.fct.add(126,GROUND-80,"-"+fmt(lost)+" G","bad");
+      UI.log(t.n+": "+fmt(lost)+" Gold verloren, Rüstung geschwächt.","bad");
+    }
+    UI.renderAll();
+  }
+  /* ---------- Reittier ---------- */
+  grantMount(){
+    const h=this.hero;
+    if(h.mount)return;
+    h.mount=pick(MOUNTS);
+    h.recompute();
+    this.mountCd=h.mount.cd*.4;
+    UI.log("Ein "+h.mount.n+" schließt sich dir an! "+h.mount.d+" ("+h.mount.bt+")","lvl");
+    this.fct.add(160,70,h.mount.n.toUpperCase(),"crit");
+    this.parts.confetti(120,GROUND-50);
+    SFX.levelup();
+  }
+  canRide(){
+    return !!(this.hero&&this.hero.mount&&this.mountCd<=0&&this.state==="walk"&&this.rideT<=0);
+  }
+  ride(){
+    if(!this.canRide())return;
+    const h=this.hero,m=h.mount;
+    this.rideT=3.2;
+    this.mountCd=m.cd;
+    this.totalDist+=m.skip;
+    this.zone++;
+    this.stats.bestZone=Math.max(this.stats.bestZone,this.zone);
+    this.props.length=0;
+    this.dist=0;this.nextEncounter=rnd(80,150);
+    this.changeBiome(true);
+    UI.log("Du sitzt auf und überspringst "+fmt(m.skip)+" m. Zone "+this.zone+
+      " \u2014 die Gegner hier sind deutlich stärker.","boss");
+    this.fct.add(210,64,"+"+fmt(m.skip)+" m","crit");
+    this.doShake(.4,3);SFX.boss();
+    UI.renderAll();
+  }
   /** Vorderster lebender Gegner — das aktuelle Ziel des Helden */
   target(){
     for(const e of this.enemies)if(!e.dead)return e;
@@ -2021,6 +2236,7 @@ class Game{
       h.bossKills++;this.stats.bosses++;
       // Weltenbosse werden auf dem Weg vermerkt — Minibosse ausdrücklich nicht
       this.bossMarks.push({d:Math.round(this.totalDist),n:e.name,lvl:e.level,zone:this.zone});
+      if(!h.mount)this.grantMount();          // der erste Boss bringt das Reittier
       this.zone++;this.stats.bestZone=Math.max(this.stats.bestZone,this.zone);
       this.changeBiome(true);
       UI.log("Zone "+this.zone+" erreicht. Die Gegner werden stärker.","lvl");}
@@ -2138,8 +2354,8 @@ class Game{
       dist:Math.round(this.totalDist),run:this.stats.runs+1,
       t:Date.now(),
       cause:this.deathInfo?this.deathInfo.kind+": "+this.deathInfo.cause:"",
-      str:h.str,dex:h.dex,int:h.int,vit:h.vit,
-      dps:h.dps,armor:h.armor,maxHp:h.maxHp,shards:h.shardsRun,
+      str:h.str|0,dex:h.dex|0,int:h.int|0,vit:h.vit|0,
+      dps:h.dps|0,armor:h.armor|0,maxHp:h.maxHp|0,shards:h.shardsRun|0,
       relic:null,active:false
     });
     if(this.graves.length>40)this.graves.shift();
@@ -2176,6 +2392,7 @@ class Game{
       c.translate(Math.round(rnd(-m,m)),Math.round(rnd(-m,m)));
     }
     this.drawWorld(c);
+    this.drawProps(c);
     this.drawDrops(c);
     if(this.hero&&this.state!=="idle")this.drawHero(c);
     this.drawEnemies(c);
@@ -2605,6 +2822,34 @@ class Game{
       }
     }
   }
+  /** Fallen, Brunnen und Segenskugeln auf dem Weg */
+  drawProps(c){
+    for(const p of this.props){
+      const sp=SPRITES[p.data.sp];
+      if(!sp)continue;
+      const sc=p.kind==="boon"?2.4:2.8;
+      const u=sc/sp.f;
+      const float=p.kind==="boon"?Math.round(Math.sin(this.time*2.6+p.x*.05)*3)-16:0;
+      if(p.kind!=="boon"){
+        c.globalAlpha=.25;c.fillStyle="#000";
+        c.beginPath();c.ellipse(p.x,GROUND+1,sp.w*u*.36,3,0,0,7);c.fill();c.globalAlpha=1;
+      }else{
+        c.save();c.shadowBlur=10;c.shadowColor=p.data.col;
+      }
+      drawSprite(c,sp,p.x,GROUND+float,sc,palette(
+        p.kind==="trap"?12:p.kind==="boon"?265:180,
+        p.kind==="boon"?60:40),false,null,p.hit?.35:1);
+      if(p.kind==="boon")c.restore();
+      if(!p.hit&&p.x<420&&p.x>0){          // Hinweisschild über dem Objekt
+        c.font="700 7px 'Courier New',monospace";c.textAlign="center";
+        c.fillStyle="rgba(0,0,0,.6)";
+        const w=c.measureText(p.data.n).width+6;
+        c.fillRect(p.x-w/2,GROUND-sp.base*u+float-13,w,9);
+        c.fillStyle=p.data.col;c.fillText(p.data.n,p.x,GROUND-sp.base*u+float-6);
+        c.textAlign="left";
+      }
+    }
+  }
   drawDrops(c){
     for(const d of this.drops){
       c.save();c.shadowBlur=8;c.shadowColor=d.col;c.fillStyle=d.col;
@@ -2630,10 +2875,14 @@ class Game{
     // Schatten
     c.globalAlpha=.28;c.fillStyle="#000";
     c.beginPath();c.ellipse(x,GROUND+1,15*look.sc*(look.wide||1),4,0,0,7);c.fill();c.globalAlpha=1;
-    const gy=GROUND-bob;
+    const gy=GROUND-bob-(this.rideT>0?16:0);
     if(look.wide){c.save();c.translate(x,0);c.scale(look.wide,1);c.translate(-x,0);}
     drawSprite(c,sp,x,gy,sc,pal,false,h.flash>0?"#ffffff":null,1,hasArt?ASSET_HUE:hue);
     if(look.wide)c.restore();
+    if(this.rideT>0&&h.mount){              // während des Ritts das Tier darunter
+      const msp=SPRITES[h.mount.sp];
+      if(msp)drawSprite(c,msp,x+4,GROUND,3.4,palette(28,45),false,null,1);
+    }
     // Merkmale nur zeichnen, wenn sie nicht schon in der Grafik stecken
     if(!hasArt)drawRaceFeatures(c,look,x,gy-sp.base*(sc/sp.f)+7*look.sc,look.sc,!!h.equip.head);
     // Umhang: weht beim Laufen nach hinten
@@ -2815,6 +3064,16 @@ class Game{
     c.font="8px 'Courier New',monospace";
     const t=["Nacht","Morgen","Tag","Abend"][this.dayT<.16?0:this.dayT<.30?1:this.dayT<.72?2:this.dayT<.88?3:0];
     const wt={clear:"Klar",rain:"Regen",snow:"Schnee",fog:"Nebel"}[this.weather];
+    if(this.hero&&this.hero.boons.length){       // laufende Segen unten links
+      let bx=6;
+      for(const b of this.hero.boons){
+        c.fillStyle="rgba(0,0,0,.55)";c.fillRect(bx,H-16,34,11);
+        c.fillStyle=b.col;c.fillRect(bx,H-16,34*clamp(b.t/b.max,0,1),2);
+        c.font="7px 'Courier New',monospace";c.fillStyle=b.col;
+        c.fillText(b.n.replace(/^Segen (der|des) /,"").slice(0,7),bx+2,H-7);
+        bx+=37;
+      }
+    }
     const s="Zone "+this.zone+"  \u2022  "+(this.biome?this.biome.n:"")+
       (this.biome&&this.biome.indoor?"":"  \u2022  "+t)+"  \u2022  "+wt;
     c.fillStyle="rgba(0,0,0,.5)";c.fillRect(4,4,c.measureText(s).width+8,12);
@@ -2998,6 +3257,29 @@ const UI={
       '<button class="btn" id="attrAuto">Alle auf '+
       {str:"Stärke",dex:"Geschick",int:"Intelligenz",vit:"Ausdauer"}[CLASSES[h.cls].prim]+'</button></div>';
     html+='<div class="hint">Ausrüstung verlangt Mindestwerte. Wer falsch verteilt, kann seine Beute nicht tragen.</div>';
+    if(h.mount){
+      const ready=G.canRide();
+      const rest=Math.max(0,Math.ceil(G.mountCd));
+      html+='<div class="h3">Reittier</div>'+
+        '<div class="mountbox"><canvas id="mountCv" width="132" height="96"></canvas>'+
+        '<div class="mbody"><b>'+h.mount.n+'</b>'+
+        '<small>'+h.mount.d+'</small>'+
+        '<small style="color:var(--acc2)">'+h.mount.bt+'</small>'+
+        '<div class="btnrow" style="margin-top:7px">'+
+        '<button class="btn'+(ready?" p":"")+'" id="btnRide"'+(ready?"":" disabled")+'>'+
+        (ready?"Aufsitzen \u2014 "+fmt(h.mount.skip)+" m überspringen":
+          (G.state==="walk"?"Bereit in "+rest+" s":"Nur unterwegs möglich"))+
+        '</button></div>'+
+        '<small style="color:var(--dim)">Ein Ritt bringt dich eine Zone tiefer. '+
+        'Die Gegner dort sind stärker.</small></div></div>';
+    }
+    if(h.boons.length){
+      html+='<div class="h3">Wirkende Segen</div>';
+      for(const b of h.boons){
+        html+='<div class="row"><span style="color:'+b.col+'">'+b.n+'</span><b>'+
+          Math.ceil(b.t)+' s \u00B7 '+effLines(b.e,1).join(", ")+'</b></div>';
+      }
+    }
     html+='<div class="h3">Kampfwerte</div>'+
       row("Schaden",h.dmgMin+" – "+h.dmgMax)+
       row("Angriffe pro Sekunde",h.atkPerSec.toFixed(2))+
@@ -3015,6 +3297,17 @@ const UI={
     if(h.status.poison>0)html+='<div class="h3">Zustand</div><span class="tag" style="color:#7cd66a">Vergiftet</span>';
     if(h.status.slow>0)html+=' <span class="tag">Verlangsamt</span>';
     $("tab-hero").innerHTML=html;
+    const mcv=$("mountCv");
+    if(mcv&&h.mount){
+      const ctx=mcv.getContext("2d");
+      ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=false;
+      ctx.clearRect(0,0,mcv.width,mcv.height);
+      const sp=SPRITES[h.mount.sp];
+      if(sp)drawSprite(ctx,sp,mcv.width/4,mcv.height/2-4,3.1,palette(28,45),false,null,1);
+      ctx.setTransform(1,0,0,1,0,0);
+    }
+    const rb=$("btnRide");
+    if(rb)rb.onclick=()=>{G.ride();this.renderHero();};
     $("tab-hero").querySelectorAll("[data-attr]").forEach(b=>{
       b.onclick=()=>{
         if(h.attrPts<=0)return;
@@ -3596,26 +3889,33 @@ const UI={
       const look=raceLook(g.race,g.look||0);
       const dt=g.t?new Date(g.t):null;
       const when=dt?dt.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})+
-        ", "+dt.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" Uhr":"Zeitpunkt unbekannt";
+        ", "+dt.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" Uhr":null;
+      // Ahnen aus früheren Fassungen führen diese Werte nicht — dann "—" statt einer falschen Null
+      const known=g.maxHp!==undefined||g.dps!==undefined||g.kills!==undefined;
+      const v=x=>(x===undefined||x===null)?'<span style="color:var(--dim)">\u2014</span>':fmt(x);
       html+='<div class="ahn'+(g.relic&&g.active?" lit":"")+'">'+
         '<canvas class="ahncv" data-idx="'+idx+'" width="144" height="180"></canvas>'+
         '<div class="abody">'+
         '<div class="anm">'+g.name+'</div>'+
         '<div class="asub">'+look.n+" \u00B7 "+CLASSES[g.cls].n+" \u00B7 Stufe "+g.level+
-        '<br>Gefallen am '+when+(g.cause?'<br>'+g.cause:"")+
+        '<br>'+(when?"Gefallen am "+when:
+          '<span style="color:var(--dim)">Todeszeitpunkt nicht überliefert</span>')+
+        (g.cause?'<br>'+g.cause:"")+
         (g.biome?" \u00B7 "+g.biome:"")+'</div>'+
         '<div class="astats">'+
-        '<span>Leben <b>'+fmt(g.maxHp||0)+'</b></span>'+
-        '<span>Schaden/s <b>'+fmt(g.dps||0)+'</b></span>'+
-        '<span>Rüstung <b>'+(g.armor||0)+'</b></span>'+
-        '<span>STR <b>'+(g.str||0)+'</b></span>'+
-        '<span>GES <b>'+(g.dex||0)+'</b></span>'+
-        '<span>INT <b>'+(g.int||0)+'</b></span>'+
-        '<span>AUS <b>'+(g.vit||0)+'</b></span>'+
-        '<span>Gegner <b>'+(g.kills||0)+'</b></span>'+
-        '<span>Bosse <b>'+(g.bk||0)+'</b></span>'+
-        '<span>Weg <b>'+fmt(g.dist||0)+' m</b></span>'+
-        '</div>';
+        '<span>Leben <b>'+v(g.maxHp)+'</b></span>'+
+        '<span>Schaden/s <b>'+v(g.dps)+'</b></span>'+
+        '<span>Rüstung <b>'+v(g.armor)+'</b></span>'+
+        '<span>STR <b>'+v(g.str)+'</b></span>'+
+        '<span>GES <b>'+v(g.dex)+'</b></span>'+
+        '<span>INT <b>'+v(g.int)+'</b></span>'+
+        '<span>AUS <b>'+v(g.vit)+'</b></span>'+
+        '<span>Gegner <b>'+v(g.kills)+'</b></span>'+
+        '<span>Bosse <b>'+v(g.bk)+'</b></span>'+
+        '<span>Weg <b>'+v(g.dist)+' m</b></span>'+
+        '</div>'+
+        (known?"":'<div class="hint" style="margin:-3px 0 7px">Dieser Ahne stammt aus einer '+
+          'früheren Fassung; seine Werte wurden damals nicht festgehalten.</div>');
       if(g.relic){
         const it=g.relic;
         html+='<div class="relic">'+
@@ -3751,7 +4051,7 @@ const UI={
       totalDist:Math.round(G.totalDist),zone:G.zone,bossMarks:G.bossMarks,
       hero:h?{name:h.name,race:h.race,cls:h.cls,level:h.level,xp:h.xp,gold:h.gold,
         potions:h.potions,skillPts:h.skillPts,skills:h.skills,attrPts:h.attrPts,alloc:h.alloc,
-        base:h.base,equip:h.equip,bag:h.bag,gems:h.gems,hp:Math.round(h.hp),tint:h.tint,look:h.look,
+        base:h.base,equip:h.equip,bag:h.bag,gems:h.gems,hp:Math.round(h.hp),tint:h.tint,look:h.look,mount:h.mount?h.mount.k:null,
         kills:h.kills,bossKills:h.bossKills,shardsRun:h.shardsRun,dmgDone:h.dmgDone}:null
     };
   },
@@ -3830,7 +4130,7 @@ const UI={
             Object.assign(nh,{level:x.level,xp:x.xp,gold:x.gold,potions:x.potions,
               skillPts:x.skillPts,skills:x.skills||{},attrPts:x.attrPts||0,
               alloc:x.alloc||{str:0,dex:0,int:0,vit:0},base:x.base,equip:x.equip||{},
-              bag:x.bag||[],gems:x.gems||[],tint:x.tint||0,look:x.look||0,kills:x.kills||0,
+              bag:x.bag||[],gems:x.gems||[],tint:x.tint||0,look:x.look||0,mount:x.mount?MOUNTS.find(m=>m.k===x.mount)||null:null,kills:x.kills||0,
               bossKills:x.bossKills||0,shardsRun:x.shardsRun||0,dmgDone:x.dmgDone||0});
             nh.recompute();nh.hp=Math.max(1,Math.min(x.hp||nh.maxHp,nh.maxHp));
             G.hero=nh;G.enemies=[];G.enemy=null;G.state="walk";G.dist=0;G.nextEncounter=130;
