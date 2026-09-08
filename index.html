@@ -328,6 +328,27 @@ body:not(.nofa) svg.slotico{display:none}
 @keyframes bob{50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion:reduce){.grave.now .pin{animation:none}}
 .pathlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--dim);margin-top:4px}
+/* ---------- Ahnengalerie ---------- */
+.ahn{display:flex;gap:11px;background:linear-gradient(180deg,#242038,#1a172a);
+  border:1px solid var(--line);border-radius:13px;padding:11px;margin-bottom:9px}
+.ahn.lit{border-color:var(--acc);box-shadow:0 0 16px rgba(189,147,249,.28)}
+.ahn canvas{width:72px;height:90px;flex:0 0 auto;image-rendering:pixelated;border-radius:10px;
+  background:linear-gradient(180deg,#221d38,#141122);border:1px solid var(--line)}
+.ahn .abody{flex:1;min-width:0}
+.ahn .anm{font-weight:700;font-size:13.5px;line-height:1.2}
+.ahn .asub{color:var(--muted);font-size:11px;margin:2px 0 6px}
+.ahn .astats{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:3px 8px;
+  font-size:11px;color:var(--muted);margin-bottom:7px}
+.ahn .astats b{color:var(--text);font-weight:700}
+.ahn .relic{display:flex;align-items:center;gap:8px;background:#15131f;border:1px solid var(--line);
+  border-radius:10px;padding:6px 8px;font-size:11.5px}
+.ahn .relic img{width:26px;height:26px;image-rendering:pixelated;flex:0 0 auto}
+.ahn .relic .rtxt{flex:1;min-width:0}
+.ahn .relic .rtxt div:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ahnhead{background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+  padding:10px 12px;margin-bottom:11px}
+.ahnhead .cnt{font-size:13px}
+.ahnhead .cnt b{color:var(--acc)}
 /* ---------- Overlay ---------- */
 .overlay{position:fixed;inset:0;z-index:800;display:none;place-items:center;padding:16px;
   background:radial-gradient(circle at 50% 40%,rgba(40,26,70,.75),rgba(6,5,12,.96));backdrop-filter:blur(4px)}
@@ -396,6 +417,7 @@ input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px 
         <button data-tab="inv" id="tabInv">Inventar</button>
         <button data-tab="skills" id="tabSkills">Fähigkeiten</button>
         <button data-tab="town">Stadt</button>
+        <button data-tab="ahnen">Ahnen</button>
         <button data-tab="sys">System</button>
       </nav>
       <div class="tabbody">
@@ -403,6 +425,7 @@ input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px 
         <div class="tab" id="tab-inv"></div>
         <div class="tab" id="tab-skills"></div>
         <div class="tab" id="tab-town"></div>
+        <div class="tab" id="tab-ahnen"></div>
         <div class="tab" id="tab-sys"></div>
       </div>
     </aside>
@@ -962,6 +985,33 @@ const RUNE_SPELLS=[
   {k:"heal", n:"Lebensquell", d:"heilt dich um einen Teil deines Lebens",col:"#5ce08a"},
   {k:"drain",n:"Seelenraub",  d:"entzieht dem Ziel Leben",               col:"#c39bff"}
 ];
+/* ----------------------------------------------------------------------------
+   Ahnengalerie: Wer einem gefallenen Helden einen Gegenstand weiht, übernimmt
+   dessen Eigenschaften dauerhaft in alle künftigen Läufe. Damit sich das über
+   viele Generationen nicht ins Uferlose summiert, wirken Weihgaben zu 60 % und
+   nur eine begrenzte Zahl ist gleichzeitig aktiv.
+   -------------------------------------------------------------------------- */
+const RELIC_RATE=.6;
+function relicSlots(){
+  return 1+((typeof G!=="undefined"&&G.meta&&G.meta.shrine)||0);
+}
+function relicBonuses(){
+  const out={stats:{},armor:0,dmgpct:0,uniq:{},skills:{},rune:{},n:0};
+  if(typeof G==="undefined"||!G.graves)return out;
+  for(const g of G.graves){
+    const it=g.relic;
+    if(!it||!g.active)continue;
+    out.n++;
+    const st=itemStats(it);
+    for(const k in st)out.stats[k]=(out.stats[k]||0)+st[k]*RELIC_RATE;
+    if(it.armor)out.armor+=it.armor*RELIC_RATE;
+    if(it.dmax)out.dmgpct+=(it.rar+1)*4*RELIC_RATE;   // Waffen wirken als Schadensbonus
+    if(it.uniq)out.uniq[it.uniq]=true;
+    if(it.skillK)out.skills[it.skillK]=(out.skills[it.skillK]||0)+it.skillV;
+    if(it.rune)for(const k in it.rune)out.rune[k]=(out.rune[k]||0)+it.rune[k]*RELIC_RATE;
+  }
+  return out;
+}
 let ITEM_ID=1;
 /** Erzeugt eine Rune mit zufälliger passiver Eigenschaft oder zufälligem Zauber */
 function makeRune(level){
@@ -1244,7 +1294,8 @@ const META=[
   {k:"heir",n:"Größere Truhe",d:"+1 vererbbarer Gegenstand",max:3,cost:16},
   {k:"gemheir",n:"Steinkammer",d:"+1 vererbbarer Seelenstein",max:3,cost:12},
   {k:"bloodline",n:"Blutlinie",d:"Vererbte Gegenstände erhalten einen zusätzlichen Sockel",max:1,cost:26},
-  {k:"purse",n:"Erbbeutel",d:"15 % deines Goldes gehen an den nächsten Helden",max:3,cost:14}
+  {k:"purse",n:"Erbbeutel",d:"15 % deines Goldes gehen an den nächsten Helden",max:3,cost:14},
+  {k:"shrine",n:"Ahnenschrein",d:"+1 gleichzeitig wirkende Weihgabe in der Ahnengalerie",max:4,cost:34}
 ];
 
 /* ============================================================================
@@ -1306,11 +1357,19 @@ class Hero extends Entity{
   }
   skill(k){return this.skills[k]||0;}
   /** Summiert die Wirkungen aller gelernten Fähigkeitsränge */
-  /** Rang einer Fähigkeit inklusive der Boni aus Ausrüstung */
+  /** Rang einer Fähigkeit inklusive Ausrüstung und geweihter Gegenstände */
   rankOf(k){
     let r=this.skills[k]||0;
     for(const sl in this.equip){const it=this.equip[sl];if(it&&it.skillK===k)r+=it.skillV;}
+    const R=this.relics||relicBonuses();
+    if(R.skills[k])r+=R.skills[k];
     return r;
+  }
+  /** Einzigartige Wirkung aus Ausrüstung oder Ahnengalerie? */
+  hasUniq(k){
+    for(const sl in this.equip){const it=this.equip[sl];if(it&&it.uniq===k)return true;}
+    const R=this.relics||relicBonuses();
+    return !!R.uniq[k];
   }
   skillEffects(){
     const e={};
@@ -1322,6 +1381,8 @@ class Hero extends Entity{
       const it=this.equip[sl];
       if(it&&it.rune)for(const k in it.rune)e[k]=(e[k]||0)+it.rune[k];
     }
+    const R=this.relics||relicBonuses();    // geweihte Runen der Ahnen
+    for(const k in R.rune)e[k]=(e[k]||0)+R.rune[k];
     return e;
   }
   /** Prüft, ob der Held einen Gegenstand tragen darf */
@@ -1337,7 +1398,10 @@ class Hero extends Entity{
   /** Sammelt alle Boni aus Ausrüstung, Skills, Rasse/Klasse und Meta-Upgrades */
   recompute(){
     const R=RACES[this.race],C=CLASSES[this.cls],m=this.meta;
+    this.relics=relicBonuses();             // Weihgaben der Ahnengalerie
     const s={str:0,dex:0,int:0,vit:0,hp:0,armor:0,crit:0,critdmg:0,dmgpct:0,aspd:0,leech:0,gf:0,mf:0,thorns:0};
+    for(const k in this.relics.stats)s[k]=(s[k]||0)+this.relics.stats[k];
+    s.armor+=this.relics.armor;s.dmgpct+=this.relics.dmgpct;
     for(const k in this.equip){
       const it=this.equip[k];if(!it)continue;
       const st=itemStats(it);
@@ -1377,6 +1441,9 @@ class Hero extends Entity{
     this.wMin=w?w.dmin:Math.round(3+this.level*1.1);
     this.wMax=w?w.dmax:Math.round(6+this.level*1.9);
     this.wSpd=w?w.spd:1;
+    if(this.relics.uniq.leech)this.leech+=8*RELIC_RATE;
+    if(this.relics.uniq.thorns)this.thorns+=Math.round(this.level*1.5*RELIC_RATE);
+    if(this.relics.uniq.mf)this.mf+=40*RELIC_RATE;
     this.dmgMin=Math.round(this.wMin*(1+prim*.048)*this.dmgMult);
     this.dmgMax=Math.round(this.wMax*(1+prim*.048)*this.dmgMult);
     this.atkPerSec=clamp(.85*this.aspd*this.wSpd*(this.status.slow>0?.8:1),.25,4);
@@ -1661,9 +1728,7 @@ class Game{
       if(h.poisonTick>=1){h.poisonTick=0;this.damageHero(h.status.poisonDmg,"Gift",true);} }
     if(h.status.slow>0){h.status.slow-=dt;if(h.status.slow<=0)h.recompute();}
     // Regeneration (Unique / Trank-Automatik)
-    if(h.equip.weapon&&h.equip.weapon.uniq==="regen"||Object.values(h.equip).some(i=>i&&i.uniq==="regen")){
-      h.hp=Math.min(h.maxHp,h.hp+h.maxHp*.01*dt);
-    }
+    if(h.hasUniq("regen"))h.hp=Math.min(h.maxHp,h.hp+h.maxHp*.01*dt);
     if(h.regen)h.hp=Math.min(h.maxHp,h.hp+h.maxHp*h.regen/100*dt);
     if(h.hp/h.maxHp<.32&&h.potions>0&&this.state==="fight")this.usePotion();
 
@@ -1779,7 +1844,7 @@ class Game{
     h.lunge=1;
     let hits=1;
     if(Math.random()*100<(h.sk.dbl||0))hits=2;
-    if(Object.values(h.equip).some(i=>i&&i.uniq==="multi")&&Math.random()<.18)hits++;
+    if(h.hasUniq("multi")&&Math.random()<.18)hits++;
     for(let i=0;i<hits;i++)this.resolveHit(h,e,i>0);
     this.castRuneSpells(h,e);
   }
@@ -1820,7 +1885,7 @@ class Game{
     const crit=Math.random()*100<h.crit;
     if(crit)dmg*=h.critDmg/100;
     // Fähigkeits-Auslöser
-    if(e.hpPct<.30)dmg*=1+(h.sk.execute||0)/100+(Object.values(h.equip).some(i=>i&&i.uniq==="execute")?.6:0);
+    if(e.hpPct<.30)dmg*=1+(h.sk.execute||0)/100+(h.hasUniq("execute")?.6:0);
     if(e.boss)dmg*=1+(h.sk.bossdmg||0)/100;
     if(this.firstHit){this.firstHit=false;
       if(h.sk.opener){dmg*=1+h.sk.opener/100;
@@ -1840,7 +1905,7 @@ class Game{
       this.fct.add(ex+rnd(-8,8),ey,(crit?"":"")+dmg,crit?"crit":"dmg");
       if(crit){SFX.crit();this.doShake(.18,3.2);this.hitStop=.05;
         this.parts.ring(ex,ey,"#ffd166");
-        if(Object.values(h.equip).some(i=>i&&i.uniq==="critboom")){
+        if(h.hasUniq("critboom")){
           const s=Math.round(dmg*.4);e.hp-=s;
           this.fct.add(ex+14,ey-12,s,"dmg");this.parts.sparks(ex,ey);
         }
@@ -1915,7 +1980,7 @@ class Game{
     h.kills++;this.stats.kills++;
     h.hp=Math.min(h.maxHp,h.hp+h.maxHp*.04);
     // Belohnungen
-    const gold=Math.round(e.gold*(1+h.gf/100)*(Object.values(h.equip).some(i=>i&&i.uniq==="gold")?2:1));
+    const gold=Math.round(e.gold*(1+h.gf/100)*(h.hasUniq("gold")?2:1));
     h.gold+=gold;
     const xp=Math.round(e.xp*(1+h.xpBonus/100));
     h.xp+=xp;
@@ -2066,10 +2131,16 @@ class Game{
     }
     this._carried=carried;
     this.graves.push({
-      name:h.name,race:h.race,cls:h.cls,level:h.level,zone:this.zone,
-      biome:this.biome?this.biome.n:"",bk:h.bossKills,
+      name:h.name,race:h.race,cls:h.cls,look:h.look||0,tint:h.tint||0,
+      level:h.level,zone:this.zone,
+      biome:this.biome?this.biome.n:"",bk:h.bossKills,kills:h.kills,
       bosses:this.bossMarks.slice(),
-      dist:Math.round(this.totalDist),run:this.stats.runs+1
+      dist:Math.round(this.totalDist),run:this.stats.runs+1,
+      t:Date.now(),
+      cause:this.deathInfo?this.deathInfo.kind+": "+this.deathInfo.cause:"",
+      str:h.str,dex:h.dex,int:h.int,vit:h.vit,
+      dps:h.dps,armor:h.armor,maxHp:h.maxHp,shards:h.shardsRun,
+      relic:null,active:false
     });
     if(this.graves.length>40)this.graves.shift();
     const bonus=Math.round((h.level*2+this.zone*4+h.bossKills*5)*(1+(this.meta.shard||0)*.12));
@@ -2837,7 +2908,7 @@ const UI={
     });
     window.addEventListener("keydown",e=>{
       if(e.key==="q"&&G.hero&&G.state!=="dead")G.usePotion();
-      const map={"1":"hero","2":"inv","3":"skills","4":"town","5":"sys"};
+      const map={"1":"hero","2":"inv","3":"skills","4":"town","5":"ahnen","6":"sys"};
       if(map[e.key])this.switchTab(map[e.key]);
     });
   },
@@ -2899,6 +2970,7 @@ const UI={
     if(t==="inv")this.renderInv();
     if(t==="skills")this.renderSkills();
     if(t==="town")this.renderTown();
+    if(t==="ahnen")this.renderAhnen();
     if(t==="sys")this.renderSys();
   },
   /* ---------- Tab: Held ---------- */
@@ -3045,6 +3117,7 @@ const UI={
     if(where==="bag")x+='<button class="btn p" id="dEquip"'+(wearable?"":" disabled")+'>'+
        (wearable?"Anlegen":"Nicht tragbar")+'</button>'+
        '<button class="btn" id="dSell">Verkaufen (+'+Math.round(itemScore(it)*.5+it.lvl*2)+' G)</button>';
+    else if(where==="relic"){ /* nur Ansicht */ }
     else if(where==="shop"){
       const o=(G.shop||[]).find(y=>y.it===it);
       if(o)x+='<button class="btn p" id="dBuy"'+(h.gold<o.price?" disabled":"")+'>Kaufen für '+fmt(o.price)+' G</button>';
@@ -3484,6 +3557,152 @@ const UI={
         if(root.id==="tab-town")this.renderTown();else this.showDeath(null,null,true);
         this.updateBars();
       };
+    });
+  },
+  /* ---------- Tab: Ahnengalerie ---------- */
+  /** Zusammenfassung dessen, was die Weihgaben zurzeit bewirken */
+  relicSummaryHtml(){
+    const R=relicBonuses();
+    const names={str:"Stärke",dex:"Geschick",int:"Intelligenz",vit:"Ausdauer",hp:"Leben",
+      armor:"Rüstung",crit:"Krit-Chance %",critdmg:"Krit-Schaden %",dmgpct:"Schaden %",
+      aspd:"Angriffstempo %",leech:"Lebensraub %",gf:"Goldfund %",mf:"Magiefund %",thorns:"Dornen %"};
+    const parts=[];
+    for(const k in R.stats){const v=Math.round(R.stats[k]*10)/10;if(v)parts.push("+"+v+" "+(names[k]||k));}
+    if(R.armor)parts.push("+"+Math.round(R.armor)+" Rüstung");
+    if(R.dmgpct)parts.push("+"+Math.round(R.dmgpct)+" Schaden %");
+    for(const k in R.rune){const v=Math.round(R.rune[k]*10)/10;
+      parts.push(effLines({[k]:v},1)[0]);}
+    for(const k in R.skills){const sk=SKILLS.find(x=>x.k===k);
+      if(sk)parts.push("+"+R.skills[k]+" Rang "+sk.n);}
+    for(const k in R.uniq){const u=UNIQUES.find(x=>x.e===k);if(u)parts.push(u.d);}
+    return parts.length?parts.join(" \u00B7 "):"Noch keine Weihgabe wirkt.";
+  },
+  renderAhnen(){
+    const h=G.hero;
+    const slots=relicSlots();
+    const used=G.graves.filter(g=>g.relic&&g.active).length;
+    let html='<div class="ahnhead"><div class="cnt">Wirkende Weihgaben: <b>'+used+" / "+slots+'</b></div>'+
+      '<div class="hint" style="margin-top:4px">Wer einem gefallenen Ahnen einen Gegenstand weiht, '+
+      'übernimmt dessen Eigenschaften dauerhaft in alle künftigen Läufe — zu '+
+      Math.round(RELIC_RATE*100)+' %. Weitere Plätze schaltet der Ahnenschrein in der Ahnenhalle frei.</div>'+
+      '<div class="hint" style="margin-top:6px;color:var(--acc2)">'+this.relicSummaryHtml()+'</div></div>';
+    if(!G.graves.length){
+      html+='<div class="hint">Noch ist kein Held gefallen. Die Galerie füllt sich von selbst.</div>';
+      $("tab-ahnen").innerHTML=html;return;
+    }
+    const list=G.graves.slice().reverse();
+    list.forEach((g,i)=>{
+      const idx=G.graves.indexOf(g);
+      const look=raceLook(g.race,g.look||0);
+      const dt=g.t?new Date(g.t):null;
+      const when=dt?dt.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})+
+        ", "+dt.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" Uhr":"Zeitpunkt unbekannt";
+      html+='<div class="ahn'+(g.relic&&g.active?" lit":"")+'">'+
+        '<canvas class="ahncv" data-idx="'+idx+'" width="144" height="180"></canvas>'+
+        '<div class="abody">'+
+        '<div class="anm">'+g.name+'</div>'+
+        '<div class="asub">'+look.n+" \u00B7 "+CLASSES[g.cls].n+" \u00B7 Stufe "+g.level+
+        '<br>Gefallen am '+when+(g.cause?'<br>'+g.cause:"")+
+        (g.biome?" \u00B7 "+g.biome:"")+'</div>'+
+        '<div class="astats">'+
+        '<span>Leben <b>'+fmt(g.maxHp||0)+'</b></span>'+
+        '<span>Schaden/s <b>'+fmt(g.dps||0)+'</b></span>'+
+        '<span>Rüstung <b>'+(g.armor||0)+'</b></span>'+
+        '<span>STR <b>'+(g.str||0)+'</b></span>'+
+        '<span>GES <b>'+(g.dex||0)+'</b></span>'+
+        '<span>INT <b>'+(g.int||0)+'</b></span>'+
+        '<span>AUS <b>'+(g.vit||0)+'</b></span>'+
+        '<span>Gegner <b>'+(g.kills||0)+'</b></span>'+
+        '<span>Bosse <b>'+(g.bk||0)+'</b></span>'+
+        '<span>Weg <b>'+fmt(g.dist||0)+' m</b></span>'+
+        '</div>';
+      if(g.relic){
+        const it=g.relic;
+        html+='<div class="relic">'+
+          (ASSETS[artIdFor(it)]?'<img src="'+ASSET_DIR+artIdFor(it)+'.png" alt="">':"")+
+          '<div class="rtxt"><div style="color:'+RARITY[it.rar].hex+'">'+it.name+'</div>'+
+          '<small style="color:var(--muted)">'+(g.active?"wirkt in jedem Lauf":"ruht")+'</small></div>'+
+          '<button class="btn'+(g.active?"":" s")+'" data-toggle="'+idx+'">'+
+          (g.active?"Ruhen lassen":"Erwecken")+'</button>'+
+          '<button class="btn" data-relicinfo="'+idx+'">Details</button></div>';
+      }else{
+        const price=this.relicPrice();
+        html+='<div class="relic"><div class="rtxt"><div style="color:var(--muted)">Kein Gegenstand geweiht</div>'+
+          '<small style="color:var(--muted)">Kostet '+price+' \u2726 und verbraucht den Gegenstand</small></div>'+
+          '<button class="btn p" data-offer="'+idx+'"'+
+          ((h&&G.shards>=price)?"":" disabled")+'>Weihen</button></div>';
+      }
+      html+='</div></div>';
+    });
+    const el=$("tab-ahnen");el.innerHTML=html;
+    // Porträts zeichnen
+    el.querySelectorAll(".ahncv").forEach(cv=>{
+      const g=G.graves[+cv.dataset.idx];
+      if(g)this.drawPortrait(cv,g.race,g.cls,g.tint||0,g.look||0);
+    });
+    el.querySelectorAll("[data-toggle]").forEach(b=>{
+      b.onclick=()=>{
+        const g=G.graves[+b.dataset.toggle];
+        if(!g.active&&G.graves.filter(x=>x.relic&&x.active).length>=relicSlots()){
+          this.toast("Alle Plätze belegt — erst eine andere Weihgabe ruhen lassen.");return;
+        }
+        g.active=!g.active;
+        if(G.hero)G.hero.recompute();
+        SFX.init();SFX.socket();G.save();
+        this.renderAhnen();this.updateBars();
+      };
+    });
+    el.querySelectorAll("[data-relicinfo]").forEach(b=>{
+      b.onclick=()=>{
+        const g=G.graves[+b.dataset.relicinfo];
+        if(g&&g.relic)this.openItem(g.relic,"relic");
+      };
+    });
+    el.querySelectorAll("[data-offer]").forEach(b=>{
+      b.onclick=()=>this.offerRelic(+b.dataset.offer);
+    });
+  },
+  relicPrice(){
+    const n=G.graves.filter(g=>g.relic).length;
+    return 12+n*8;
+  },
+  /** Auswahlfenster: welchen Gegenstand des lebenden Helden bekommt der Ahne? */
+  offerRelic(idx){
+    const h=G.hero,g=G.graves[idx];
+    if(!h){this.toast("Dafür braucht es einen lebenden Helden.");return;}
+    const price=this.relicPrice();
+    if(G.shards<price){this.toast("Zu wenig Seelensplitter.");return;}
+    const items=[].concat(Object.values(h.equip).filter(Boolean),h.bag)
+      .sort((a,b)=>itemScore(b)-itemScore(a)).slice(0,24);
+    if(!items.length){this.toast("Dein Held trägt nichts, was sich weihen ließe.");return;}
+    const html='<div><div class="dname">Weihgabe für '+g.name+'</div>'+
+      '<div class="dsub">Der Gegenstand wird verbraucht. Seine Eigenschaften wirken danach '+
+      'in jedem künftigen Lauf zu '+Math.round(RELIC_RATE*100)+' %.</div>'+
+      '<div class="hint">Kosten: '+price+' \u2726 \u00B7 vorhanden: '+G.shards+' \u2726</div>'+
+      '<div class="bag" style="margin-top:9px">'+
+      items.map((it,i)=>'<div class="cell r'+it.rar+'" data-pick="'+i+'" '+
+        'style="color:'+RARITY[it.rar].hex+'" title="'+it.name+" \u00B7 Wertung "+itemScore(it)+'">'+
+        artImg(artIdFor(it),SLOTS[it.slot]?SLOTS[it.slot].ico:"?")+'</div>').join("")+
+      '</div><div class="hint" style="margin-top:8px">Angelegte Stücke werden vorher abgelegt.</div>'+
+      '<div class="btnrow" style="margin-top:10px"><button class="btn" id="offCancel">Abbrechen</button></div></div>';
+    this.openSheet(html,()=>{
+      $("sheet").querySelectorAll("[data-pick]").forEach(el=>{
+        el.onclick=()=>{
+          const it=items[+el.dataset.pick];
+          for(const sl in h.equip)if(h.equip[sl]===it)h.equip[sl]=null;
+          const bi=h.bag.indexOf(it);if(bi>=0)h.bag.splice(bi,1);
+          G.shards-=price;
+          g.relic=JSON.parse(JSON.stringify(it));
+          g.active=G.graves.filter(x=>x.relic&&x.active).length<relicSlots();
+          h.recompute();
+          SFX.init();SFX.levelup();G.parts.confetti(120,GROUND-50);
+          this.log(it.name+" wurde "+g.name+" geweiht"+(g.active?" und wirkt ab sofort.":" und ruht vorerst."),"lvl");
+          G.save();
+          this.closeSheet();
+          this.switchTab("ahnen");
+        };
+      });
+      $("offCancel").onclick=()=>this.closeSheet();
     });
   },
   /* ---------- Tab: System ---------- */
