@@ -1,0 +1,842 @@
+{
+ "basisFarbton": 210,
+ "hinweis": "Ein Pixel im PNG = ein Pixel im Spiel. Maße beibehalten.",
+ "figuren": {
+  "alien": {
+   "datei": "alien.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "astral": {
+   "datei": "astral.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "bandit": {
+   "datei": "bandit.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "beast": {
+   "datei": "beast.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "boss0": {
+   "datei": "boss0.png",
+   "breite": 80,
+   "hoehe": 80
+  },
+  "boss1": {
+   "datei": "boss1.png",
+   "breite": 80,
+   "hoehe": 80
+  },
+  "boss2": {
+   "datei": "boss2.png",
+   "breite": 80,
+   "hoehe": 80
+  },
+  "boss3": {
+   "datei": "boss3.png",
+   "breite": 80,
+   "hoehe": 80
+  },
+  "boss4": {
+   "datei": "boss4.png",
+   "breite": 80,
+   "hoehe": 80
+  },
+  "boss5": {
+   "datei": "boss5.png",
+   "breite": 80,
+   "hoehe": 80
+  },
+  "boss6": {
+   "datei": "boss6.png",
+   "breite": 80,
+   "hoehe": 80
+  },
+  "daemon": {
+   "datei": "daemon.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "eldritch": {
+   "datei": "eldritch.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "elementar": {
+   "datei": "elementar.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "flying": {
+   "datei": "flying.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "geist": {
+   "datei": "geist.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "gespenst": {
+   "datei": "gespenst.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "golem": {
+   "datei": "golem.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "hero_mage": {
+   "datei": "hero_mage.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "hero_paladin": {
+   "datei": "hero_paladin.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "hero_rogue": {
+   "datei": "hero_rogue.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "hero_warrior": {
+   "datei": "hero_warrior.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "humanoid": {
+   "datei": "humanoid.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "kultist": {
+   "datei": "kultist.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "lich": {
+   "datei": "lich.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "mutant": {
+   "datei": "mutant.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "parasit": {
+   "datei": "parasit.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "pflanze": {
+   "datei": "pflanze.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "rebell": {
+   "datei": "rebell.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "slime": {
+   "datei": "slime.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "tyrant": {
+   "datei": "tyrant.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "untoter": {
+   "datei": "untoter.png",
+   "breite": 64,
+   "hoehe": 64
+  }
+ },
+ "gegenstaende": {
+  "weapon_sword": {
+   "datei": "weapon_sword.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "weapon_dagger": {
+   "datei": "weapon_dagger.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "weapon_axe": {
+   "datei": "weapon_axe.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "weapon_staff": {
+   "datei": "weapon_staff.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "weapon_bow": {
+   "datei": "weapon_bow.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "weapon_hammer": {
+   "datei": "weapon_hammer.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "armor_head": {
+   "datei": "armor_head.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "armor_chest": {
+   "datei": "armor_chest.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "armor_hands": {
+   "datei": "armor_hands.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "armor_legs": {
+   "datei": "armor_legs.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "armor_feet": {
+   "datei": "armor_feet.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "armor_offhand": {
+   "datei": "armor_offhand.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "armor_ring": {
+   "datei": "armor_ring.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "armor_amulet": {
+   "datei": "armor_amulet.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "armor_orb": {
+   "datei": "armor_orb.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "gem_ruby": {
+   "datei": "gem_ruby.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "gem_sapphire": {
+   "datei": "gem_sapphire.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "gem_emerald": {
+   "datei": "gem_emerald.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "gem_topaz": {
+   "datei": "gem_topaz.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "gem_amethyst": {
+   "datei": "gem_amethyst.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "gem_onyx": {
+   "datei": "gem_onyx.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "rune_1": {
+   "datei": "rune_1.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "rune_2": {
+   "datei": "rune_2.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "rune_3": {
+   "datei": "rune_3.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "rune_4": {
+   "datei": "rune_4.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "rune_5": {
+   "datei": "rune_5.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "rune_6": {
+   "datei": "rune_6.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "rune_7": {
+   "datei": "rune_7.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "rune_8": {
+   "datei": "rune_8.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "misc_potion": {
+   "datei": "misc_potion.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "misc_shard": {
+   "datei": "misc_shard.png",
+   "breite": 64,
+   "hoehe": 64
+  },
+  "misc_gold": {
+   "datei": "misc_gold.png",
+   "breite": 64,
+   "hoehe": 64
+  }
+ },
+ "charaktere": {
+  "hero_nordmensch_warrior": {
+   "datei": "hero_nordmensch_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "nordmensch",
+   "klasse": "warrior"
+  },
+  "hero_nordmensch_mage": {
+   "datei": "hero_nordmensch_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "nordmensch",
+   "klasse": "mage"
+  },
+  "hero_nordmensch_rogue": {
+   "datei": "hero_nordmensch_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "nordmensch",
+   "klasse": "rogue"
+  },
+  "hero_nordmensch_paladin": {
+   "datei": "hero_nordmensch_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "nordmensch",
+   "klasse": "paladin"
+  },
+  "hero_steppenvolk_warrior": {
+   "datei": "hero_steppenvolk_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "steppenvolk",
+   "klasse": "warrior"
+  },
+  "hero_steppenvolk_mage": {
+   "datei": "hero_steppenvolk_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "steppenvolk",
+   "klasse": "mage"
+  },
+  "hero_steppenvolk_rogue": {
+   "datei": "hero_steppenvolk_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "steppenvolk",
+   "klasse": "rogue"
+  },
+  "hero_steppenvolk_paladin": {
+   "datei": "hero_steppenvolk_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "steppenvolk",
+   "klasse": "paladin"
+  },
+  "hero_kuestenvolk_warrior": {
+   "datei": "hero_kuestenvolk_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "kuestenvolk",
+   "klasse": "warrior"
+  },
+  "hero_kuestenvolk_mage": {
+   "datei": "hero_kuestenvolk_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "kuestenvolk",
+   "klasse": "mage"
+  },
+  "hero_kuestenvolk_rogue": {
+   "datei": "hero_kuestenvolk_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "kuestenvolk",
+   "klasse": "rogue"
+  },
+  "hero_kuestenvolk_paladin": {
+   "datei": "hero_kuestenvolk_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "kuestenvolk",
+   "klasse": "paladin"
+  },
+  "hero_bergmensch_warrior": {
+   "datei": "hero_bergmensch_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "bergmensch",
+   "klasse": "warrior"
+  },
+  "hero_bergmensch_mage": {
+   "datei": "hero_bergmensch_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "bergmensch",
+   "klasse": "mage"
+  },
+  "hero_bergmensch_rogue": {
+   "datei": "hero_bergmensch_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "bergmensch",
+   "klasse": "rogue"
+  },
+  "hero_bergmensch_paladin": {
+   "datei": "hero_bergmensch_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "human",
+   "unterrasse": "bergmensch",
+   "klasse": "paladin"
+  },
+  "hero_waldelf_warrior": {
+   "datei": "hero_waldelf_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "waldelf",
+   "klasse": "warrior"
+  },
+  "hero_waldelf_mage": {
+   "datei": "hero_waldelf_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "waldelf",
+   "klasse": "mage"
+  },
+  "hero_waldelf_rogue": {
+   "datei": "hero_waldelf_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "waldelf",
+   "klasse": "rogue"
+  },
+  "hero_waldelf_paladin": {
+   "datei": "hero_waldelf_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "waldelf",
+   "klasse": "paladin"
+  },
+  "hero_hochelf_warrior": {
+   "datei": "hero_hochelf_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "hochelf",
+   "klasse": "warrior"
+  },
+  "hero_hochelf_mage": {
+   "datei": "hero_hochelf_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "hochelf",
+   "klasse": "mage"
+  },
+  "hero_hochelf_rogue": {
+   "datei": "hero_hochelf_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "hochelf",
+   "klasse": "rogue"
+  },
+  "hero_hochelf_paladin": {
+   "datei": "hero_hochelf_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "hochelf",
+   "klasse": "paladin"
+  },
+  "hero_dunkelelf_warrior": {
+   "datei": "hero_dunkelelf_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "dunkelelf",
+   "klasse": "warrior"
+  },
+  "hero_dunkelelf_mage": {
+   "datei": "hero_dunkelelf_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "dunkelelf",
+   "klasse": "mage"
+  },
+  "hero_dunkelelf_rogue": {
+   "datei": "hero_dunkelelf_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "dunkelelf",
+   "klasse": "rogue"
+  },
+  "hero_dunkelelf_paladin": {
+   "datei": "hero_dunkelelf_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "dunkelelf",
+   "klasse": "paladin"
+  },
+  "hero_sonnenelf_warrior": {
+   "datei": "hero_sonnenelf_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "sonnenelf",
+   "klasse": "warrior"
+  },
+  "hero_sonnenelf_mage": {
+   "datei": "hero_sonnenelf_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "sonnenelf",
+   "klasse": "mage"
+  },
+  "hero_sonnenelf_rogue": {
+   "datei": "hero_sonnenelf_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "sonnenelf",
+   "klasse": "rogue"
+  },
+  "hero_sonnenelf_paladin": {
+   "datei": "hero_sonnenelf_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "elf",
+   "unterrasse": "sonnenelf",
+   "klasse": "paladin"
+  },
+  "hero_steinbart_warrior": {
+   "datei": "hero_steinbart_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "steinbart",
+   "klasse": "warrior"
+  },
+  "hero_steinbart_mage": {
+   "datei": "hero_steinbart_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "steinbart",
+   "klasse": "mage"
+  },
+  "hero_steinbart_rogue": {
+   "datei": "hero_steinbart_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "steinbart",
+   "klasse": "rogue"
+  },
+  "hero_steinbart_paladin": {
+   "datei": "hero_steinbart_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "steinbart",
+   "klasse": "paladin"
+  },
+  "hero_feuerbart_warrior": {
+   "datei": "hero_feuerbart_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "feuerbart",
+   "klasse": "warrior"
+  },
+  "hero_feuerbart_mage": {
+   "datei": "hero_feuerbart_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "feuerbart",
+   "klasse": "mage"
+  },
+  "hero_feuerbart_rogue": {
+   "datei": "hero_feuerbart_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "feuerbart",
+   "klasse": "rogue"
+  },
+  "hero_feuerbart_paladin": {
+   "datei": "hero_feuerbart_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "feuerbart",
+   "klasse": "paladin"
+  },
+  "hero_eisenbart_warrior": {
+   "datei": "hero_eisenbart_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "eisenbart",
+   "klasse": "warrior"
+  },
+  "hero_eisenbart_mage": {
+   "datei": "hero_eisenbart_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "eisenbart",
+   "klasse": "mage"
+  },
+  "hero_eisenbart_rogue": {
+   "datei": "hero_eisenbart_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "eisenbart",
+   "klasse": "rogue"
+  },
+  "hero_eisenbart_paladin": {
+   "datei": "hero_eisenbart_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "eisenbart",
+   "klasse": "paladin"
+  },
+  "hero_graubart_warrior": {
+   "datei": "hero_graubart_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "graubart",
+   "klasse": "warrior"
+  },
+  "hero_graubart_mage": {
+   "datei": "hero_graubart_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "graubart",
+   "klasse": "mage"
+  },
+  "hero_graubart_rogue": {
+   "datei": "hero_graubart_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "graubart",
+   "klasse": "rogue"
+  },
+  "hero_graubart_paladin": {
+   "datei": "hero_graubart_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "dwarf",
+   "unterrasse": "graubart",
+   "klasse": "paladin"
+  },
+  "hero_gruenhaut_warrior": {
+   "datei": "hero_gruenhaut_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "gruenhaut",
+   "klasse": "warrior"
+  },
+  "hero_gruenhaut_mage": {
+   "datei": "hero_gruenhaut_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "gruenhaut",
+   "klasse": "mage"
+  },
+  "hero_gruenhaut_rogue": {
+   "datei": "hero_gruenhaut_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "gruenhaut",
+   "klasse": "rogue"
+  },
+  "hero_gruenhaut_paladin": {
+   "datei": "hero_gruenhaut_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "gruenhaut",
+   "klasse": "paladin"
+  },
+  "hero_aschenork_warrior": {
+   "datei": "hero_aschenork_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "aschenork",
+   "klasse": "warrior"
+  },
+  "hero_aschenork_mage": {
+   "datei": "hero_aschenork_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "aschenork",
+   "klasse": "mage"
+  },
+  "hero_aschenork_rogue": {
+   "datei": "hero_aschenork_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "aschenork",
+   "klasse": "rogue"
+  },
+  "hero_aschenork_paladin": {
+   "datei": "hero_aschenork_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "aschenork",
+   "klasse": "paladin"
+  },
+  "hero_blutork_warrior": {
+   "datei": "hero_blutork_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "blutork",
+   "klasse": "warrior"
+  },
+  "hero_blutork_mage": {
+   "datei": "hero_blutork_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "blutork",
+   "klasse": "mage"
+  },
+  "hero_blutork_rogue": {
+   "datei": "hero_blutork_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "blutork",
+   "klasse": "rogue"
+  },
+  "hero_blutork_paladin": {
+   "datei": "hero_blutork_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "blutork",
+   "klasse": "paladin"
+  },
+  "hero_sumpfork_warrior": {
+   "datei": "hero_sumpfork_warrior.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "sumpfork",
+   "klasse": "warrior"
+  },
+  "hero_sumpfork_mage": {
+   "datei": "hero_sumpfork_mage.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "sumpfork",
+   "klasse": "mage"
+  },
+  "hero_sumpfork_rogue": {
+   "datei": "hero_sumpfork_rogue.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "sumpfork",
+   "klasse": "rogue"
+  },
+  "hero_sumpfork_paladin": {
+   "datei": "hero_sumpfork_paladin.png",
+   "breite": 64,
+   "hoehe": 64,
+   "rasse": "orc",
+   "unterrasse": "sumpfork",
+   "klasse": "paladin"
+  }
+ }
+}
