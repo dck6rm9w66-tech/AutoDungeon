@@ -728,13 +728,17 @@ class MusicEngine{
   }
 }
 const MUSIC=new MusicEngine();
-/** Wählt das passende Stück zur aktuellen Spielsituation */
+/** Wählt das passende Stück zur aktuellen Spielsituation.
+    Kampfmusik gibt es nur für Minibosse und Weltenbosse — bei gewöhnlichen
+    Gegnern läuft die Musik der Umgebung einfach weiter. `null` bedeutet
+    ausdrücklich "nichts ändern". */
 function pickTrack(){
   if(!G||!G.hero||G.state==="dead")return null;
   if(G.state==="fight"){
     const e=G.target?G.target():null;
-    if(e&&(e.boss||e.mini))return"reckoning";
-    return"steel";
+    if(e&&e.boss)return"reckoning";      // Weltenboss
+    if(e&&e.mini)return"steel";          // Miniboss
+    return null;                          // gewöhnlicher Kampf: Musik bleibt
   }
   const b=G.biome;
   if(!b)return"wander";
@@ -2097,10 +2101,14 @@ class Game{
       }
     }else if(this.state==="victory"){
       this.vicT-=dt;
-      if(this.vicT<=0){this.state="walk";this.enemy=null;this.enemies=[];
+      if(this.vicT<=0){
+        // Lief Kampfmusik, kehrt sie hier zur Umgebung zurück
+        const wasBattle=MUSIC.current==="steel"||MUSIC.current==="reckoning";
+        this.state="walk";this.enemy=null;this.enemies=[];
         this.dist=0;this.nextEncounter=rnd(80,150);
         if(--this.biomeLeft<=0)this.changeBiome();
-        updateMusic();}
+        if(wasBattle)updateMusic();
+      }
     }
     if(h.flash>0)h.flash-=dt;
     for(const e of this.enemies){
@@ -4432,8 +4440,9 @@ const UI={
       '<div class="audiorow"><span>Musiklautstärke</span>'+
       '<input type="range" id="musicVol" min="0" max="100" value="'+Math.round(MUSIC.vol*100)+'">'+
       '<b id="musicVolLb">'+Math.round(MUSIC.vol*100)+'%</b></div>'+
-      '<div class="hint">Sechs eigens komponierte, lizenzfreie Stücke wechseln automatisch zwischen '+
-      'Erkundung, Dorf, Gemäuer, Höllenschlund, Kampf und Bosskampf.<br>Aktuell: <b>'+
+      '<div class="hint">Sechs eigens komponierte, lizenzfreie Stücke. Vier richten sich nach der '+
+      'Umgebung; Kampfmusik erklingt nur bei Minibossen (Klinge und Stahl) und Weltenbossen '+
+      '(Abrechnung). Gewöhnliche Gegner lassen die Musik unangetastet.<br>Aktuell: <b>'+
       (TRACKS[MUSIC.current]?TRACKS[MUSIC.current].n:"\u2014")+'</b>'+
       ' \u00B7 Quelle: '+(MUSIC.mode()==="datei"?"Aufnahme aus <code>music/</code>":
         "eingebauter Synthesizer (keine Datei gefunden)")+
