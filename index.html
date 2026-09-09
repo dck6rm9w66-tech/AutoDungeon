@@ -51,6 +51,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc2);outl
   padding:4px 10px;font-size:12px;letter-spacing:.5px;white-space:nowrap}
 .chip.gold{color:var(--gold);border-color:#5a4a1e}
 .chip.soul{color:var(--soul);border-color:#1e5a4c}
+.chip.soul .gain{color:#b6ffe8;font-weight:700}
+.chip.soul .csub{color:var(--muted);font-size:11px}
+.chip.soul.pulse{animation:soulpop .5s ease-out}
+@keyframes soulpop{0%{transform:scale(1)}35%{transform:scale(1.16);
+  box-shadow:0 0 14px var(--soul)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.chip.soul.pulse{animation:none}}
 .chip.zone{color:var(--acc2);border-color:#1e4a5a}
 
 /* ---------- Layout ---------- */
@@ -142,6 +148,8 @@ body:not(.nofa) svg.slotico{display:none}
 .cell.r1{border-color:#3f6ea8;box-shadow:0 0 10px rgba(90,169,255,.28)}
 .cell.r2{border-color:#8f8437;box-shadow:0 0 10px rgba(242,224,106,.28)}
 .cell.r3{border-color:#a55f1c;box-shadow:0 0 14px rgba(255,154,60,.42)}
+.cell .upnum{position:absolute;bottom:1px;left:4px;font-size:9px;font-weight:700;
+  color:var(--gold);text-shadow:0 0 4px rgba(0,0,0,.9)}
 .cell .sock{position:absolute;top:2px;right:3px;font-size:8px;color:var(--acc2);letter-spacing:-1px}
 .cell.socketing{animation:pulse 1s infinite}
 @keyframes pulse{50%{box-shadow:0 0 16px var(--acc2)}}
@@ -394,7 +402,7 @@ input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px 
       <div class="chip" id="chipHero">—</div>
       <div class="chip zone" id="chipZone">Zone 1</div>
       <div class="chip gold" id="chipGold">0 Gold</div>
-      <div class="chip soul" id="chipSoul">0 Seelensplitter</div>
+      <div class="chip soul" id="chipSoul">0 \u2726 <span class="csub">Seelensplitter</span></div>
     </div>
   </header>
 
@@ -1129,6 +1137,34 @@ function itemStats(it){
   }
   return s;
 }
+/* ----------------------------------------------------------------------------
+   Schmied: wertet Waffen und Rüstung stufenweise auf. Angehoben werden die
+   Grundwerte und die festen Attribute — Prozentwerte wie kritische Chance
+   bleiben unangetastet, sonst würden Legendäre uferlos.
+   -------------------------------------------------------------------------- */
+function maxUpgrade(){return 5+((typeof G!=="undefined"&&G.meta&&G.meta.smith)?2:0);}
+function smithCost(it){
+  const disc=(typeof G!=="undefined"&&G.meta&&G.meta.smith)?.75:1;
+  return Math.round((50+it.lvl*20)*Math.pow(1.5,it.up||0)*(1+it.rar*.3)*disc);
+}
+function upgradeItem(it){
+  it.up=(it.up||0)+1;
+  if(it.dmax){
+    it.dmin=Math.max(it.dmin+1,Math.round(it.dmin*1.10));
+    it.dmax=Math.max(it.dmax+1,Math.round(it.dmax*1.10));
+  }
+  if(it.armor)it.armor=Math.max(it.armor+1,Math.round(it.armor*1.10));
+  for(const k of ["str","dex","int","vit","hp","armor","thorns"]){
+    if(it.stats[k])it.stats[k]=Math.max(it.stats[k]+1,Math.round(it.stats[k]*1.07));
+  }
+  return it;
+}
+/** Name mit Aufwertungsstufe, etwa "Grimmiges Langschwert +3" */
+function iname(it){return it.name+((it.up)?" +"+it.up:"");}
+/* Mystiker: Edelsteine veredeln — drei gleiche verschmelzen oder einen
+   einzelnen gegen Seelensplitter eine Güte anheben. */
+function mergeCost(q,lvl){return Math.round(40+q*38+(lvl||1)*8);}
+function refineCost(q){return 3+q*2;}
 function itemScore(it){
   if(!it)return 0;const s=itemStats(it);let v=0;
   if(it.dmax)v+=(it.dmin+it.dmax)/2*3;
@@ -1311,7 +1347,7 @@ const META=[
   {k:"potion",n:"Bessere Tränke",d:"Tränke heilen +20% und du startest mit einem mehr",max:3,cost:10},
   {k:"shard",n:"Seelenanker",d:"+12% Seelensplitter pro Rang",max:5,cost:12},
   {k:"mf",n:"Gespür für Beute",d:"+10% Magiefund pro Rang",max:5,cost:10},
-  {k:"smith",n:"Schmied anheuern",d:"Der Händler führt rare und legendäre Waren",max:1,cost:30},
+  {k:"smith",n:"Meisterschmied",d:"Bessere Waren beim Händler, 25 % Rabatt in der Schmiede und zwei zusätzliche Aufwertungsstufen",max:1,cost:30},
   {k:"gemcutter",n:"Steinschleifer",d:"Jeder Run startet mit 2 Edelsteinen",max:1,cost:22},
   {k:"xp",n:"Lehren der Ahnen",d:"+10% Erfahrung pro Rang",max:5,cost:9},
   {k:"skill",n:"Angeborenes Talent",d:"+1 Fähigkeitspunkt zum Start",max:3,cost:15},
@@ -2210,8 +2246,13 @@ class Game{
     else if(e.mini&&Math.random()<.35)sh=1;
     else if(e.affix&&e.affix.k==="golden"&&Math.random()<.25)sh=1;
     else if(Math.random()<.0075*(1+(h.sk.shard||0)/100))sh=1;
-    if(sh){sh=Math.round(sh*(1+(this.meta.shard||0)*.12));h.shardsRun+=sh;
-      this.fct.add(cx,cy-38,"+"+sh+" \u2726","loot");UI.log("+"+sh+" Seelensplitter.","loot");}
+    if(sh){
+      sh=Math.round(sh*(1+(this.meta.shard||0)*.12));h.shardsRun+=sh;
+      this.fct.add(cx,cy-38,"+"+sh+" \u2726","loot");
+      this.parts.ring(cx,cy-20,"#7ef0d0");
+      SFX.loot();
+      UI.log("+"+sh+" Seelensplitter \u2014 dieser Lauf: "+h.shardsRun+".","loot");
+    }
     // Loot
     const chance=e.boss?1:e.mini?.85:clamp(.24+h.mf/500,0,.6);
     if(Math.random()<chance){
@@ -3209,7 +3250,18 @@ const UI={
     $("chipHero").textContent=h.name+"  Stufe "+h.level;
     $("chipZone").textContent="Zone "+G.zone;
     $("chipGold").textContent=fmt(h.gold)+" Gold";
-    $("chipSoul").textContent=G.shards+" Seelensplitter";
+    // Der Vorrat der Ahnenhalle wächst erst beim Tod — die Ausbeute des
+    // laufenden Helden wird deshalb getrennt daneben angezeigt.
+    const cs=$("chipSoul"),run=h.shardsRun||0;
+    cs.innerHTML=G.shards+' \u2726'+
+      (run?' <span class="gain">+'+run+'</span>':'')+
+      ' <span class="csub">Seelensplitter</span>';
+    if(run!==this._lastShards){
+      if(this._lastShards!==undefined&&run>this._lastShards){
+        cs.classList.remove("pulse");void cs.offsetWidth;cs.classList.add("pulse");
+      }
+      this._lastShards=run;
+    }
     const ts=$("tabSkills");
     ts.textContent="Fähigkeiten"+(h.skillPts>0?" \u00B7 "+h.skillPts:"");
     ts.classList.toggle("alert",h.skillPts>0);
@@ -3240,6 +3292,8 @@ const UI={
       '<div class="row"><span>'+h.name+'</span><b>'+RACES[h.race].n+" \u00B7 "+CLASSES[h.cls].n+'</b></div>'+
       row("Stufe",h.level)+row("Getötete Gegner",h.kills)+row("Besiegte Bosse",h.bossKills)+
       row("Tränke","\u2665 "+h.potions+"  <span class=\"hint\">(Taste Q)</span>")+
+      row("Seelensplitter gefunden","\u2726 "+(h.shardsRun||0))+
+      row("Vorrat der Ahnenhalle","\u2726 "+G.shards)+
       row("Zurückgelegter Weg",fmt(Math.round(G.totalDist))+" m")+
       row("Aktueller Ort",G.biome?G.biome.n:"—");
     html+='<div class="h3">Attribute'+(h.attrPts>0?' \u2014 '+h.attrPts+' Punkte frei':"")+'</div>';
@@ -3388,8 +3442,9 @@ const UI={
     const eq=where==="equip"?null:h.equip[it.slot];
     let x='<div>'+
       (ASSETS[artIdFor(it)]?'<img class="detail-art" src="'+ASSET_DIR+artIdFor(it)+'.png" alt="">':"")+
-      '<div class="dname" style="color:'+R.hex+'">'+it.name+'</div>'+
+      '<div class="dname" style="color:'+R.hex+'">'+iname(it)+'</div>'+
       '<div class="dsub">'+R.n+" \u00B7 "+SLOTS[it.slot].n+" \u00B7 Gegenstandsstufe "+it.lvl+
+      (it.up?" \u00B7 beim Schmied "+it.up+"-mal aufgewertet":"")+
       (where==="equip"?" \u00B7 angelegt":"")+'</div>';
     if(it.dmax)x+='<div class="effline">'+it.dmin+" \u2013 "+it.dmax+' Schaden</div>';
     if(it.armor)x+='<div class="effline">'+it.armor+' Rüstung</div>';
@@ -3636,7 +3691,7 @@ const UI={
     h+='<div class="cmp" style="margin-top:6px">Wertung: '+itemScore(it)+'</div>';
     if(compare){
       const d=itemScore(it)-itemScore(compare);
-      h+='<hr><div class="ttype">Angelegt: <span style="color:'+RARITY[compare.rar].hex+'">'+compare.name+'</span></div>';
+      h+='<hr><div class="ttype">Angelegt: <span style="color:'+RARITY[compare.rar].hex+'">'+iname(compare)+'</span></div>';
       if(compare.dmax)h+='<div class="cmp">'+compare.dmin+" – "+compare.dmax+' Schaden</div>';
       if(compare.armor)h+='<div class="cmp">'+compare.armor+' Rüstung</div>';
       h+='<div class="'+(d>=0?"up":"dn")+'">'+(d>=0?"\u25B2 +":"\u25BC ")+d+' Wertung im Vergleich</div>';
@@ -3787,6 +3842,52 @@ const UI={
     html+='</div><div class="btnrow" style="margin-top:9px">'+
       '<button class="btn" id="reroll">Waren erneuern (50 G)</button></div>';
 
+    // ---------- Schmied ----------
+    const forgeable=[].concat(Object.values(h.equip).filter(Boolean),h.bag)
+      .filter(it=>!it.isRune&&(it.dmax||it.armor))
+      .sort((a,b)=>itemScore(b)-itemScore(a)).slice(0,18);
+    html+='<div class="h3">Schmied — Waffen und Rüstung aufwerten</div>'+
+      '<div class="hint">Jede Stufe hebt Schaden oder Rüstung um 10 % und die festen Attribute um 7 %. '+
+      'Höchstens '+maxUpgrade()+' Stufen je Stück.</div>';
+    if(forgeable.length){
+      html+='<div class="bag" style="margin-top:9px">'+
+        forgeable.map((it,i)=>{
+          const done=(it.up||0)>=maxUpgrade();
+          const cost=smithCost(it);
+          return '<div class="cell r'+it.rar+'" data-forge="'+i+'" style="color:'+RARITY[it.rar].hex+
+            (done?";opacity:.45":"")+'" title="'+iname(it)+" \u00B7 "+
+            (done?"voll aufgewertet":cost+" Gold")+'">'+
+            artImg(artIdFor(it),SLOTS[it.slot]?SLOTS[it.slot].ico:"?")+
+            ((it.up)?'<span class="upnum">+'+it.up+'</span>':"")+'</div>';
+        }).join("")+'</div>';
+    }else html+='<div class="hint" style="margin-top:8px">Du trägst nichts, was sich schmieden ließe.</div>';
+
+    // ---------- Mystiker ----------
+    const gcounts={};h.gems.forEach(g=>gcounts[g]=(gcounts[g]||0)+1);
+    const gkeys=Object.keys(gcounts).sort((a,b)=>parseGem(b).q-parseGem(a).q);
+    html+='<div class="h3">Mystiker — Edelsteine veredeln</div>'+
+      '<div class="hint">Drei gleiche Steine verschmelzen zu einem der nächsten Güte. '+
+      'Einzelne Steine hebt der Mystiker gegen Seelensplitter an.</div>';
+    if(gkeys.length){
+      html+='<div class="shop" style="margin-top:9px">';
+      for(const k of gkeys){
+        const P=parseGem(k),n=gcounts[k],top=P.q>=9;
+        const mc=mergeCost(P.q,h.level),rc=refineCost(P.q);
+        html+='<div class="offer"><div class="ic" style="color:'+P.col+'">'+
+          artImg("gem_"+P.base.k,P.base.ico)+'</div>'+
+          '<div class="meta"><div style="color:'+P.Q.col+'">'+P.name+' \u00D7'+n+'</div>'+
+          '<small>'+P.txt+(top?" \u00B7 höchste Güte":" \u00B7 nächste Güte: "+
+            GEM_QUAL[P.q+1].n+" (+"+Math.max(1,Math.round(P.base.amt*GEM_QUAL[P.q+1].m))+P.base.unit+")")+
+          '</small></div>'+
+          (top?'':'<button class="btn" data-merge="'+k+'"'+((n>=3&&h.gold>=mc)?"":" disabled")+'>'+
+            '3\u21921 \u00B7 '+fmt(mc)+' G</button>'+
+          '<button class="btn s" data-refine="'+k+'"'+((G.shards>=rc)?"":" disabled")+'>'+
+            'Veredeln \u00B7 '+rc+' \u2726</button>')+
+          '</div>';
+      }
+      html+='</div>';
+    }else html+='<div class="hint" style="margin-top:8px">Du trägst keine Edelsteine bei dir.</div>';
+
     html+='<div class="h3">Ahnenhalle — dauerhafte Verbesserungen</div>'+
       '<div class="row"><span>Seelensplitter</span><b style="color:var(--soul)">'+G.shards+'</b></div>'+
       '<div class="hint">Diese Aufwertungen gelten für jeden zukünftigen Run.</div><div style="margin-top:8px">';
@@ -3814,6 +3915,42 @@ const UI={
         ic.onmouseleave=()=>this.hideTooltip();}
       ic.onclick=()=>this.openItem(o.it,"shop");
     });
+    // Schmied
+    el.querySelectorAll("[data-forge]").forEach(b=>{
+      b.onclick=()=>{const it=forgeable[+b.dataset.forge];if(it)this.openForge(it);};
+    });
+    // Mystiker
+    el.querySelectorAll("[data-merge]").forEach(b=>{
+      b.onclick=()=>{
+        const key=b.dataset.merge,P=parseGem(key);
+        const cost=mergeCost(P.q,h.level);
+        if(h.gold<cost||h.gems.filter(g=>g===key).length<3)return;
+        h.gold-=cost;
+        for(let i=0;i<3;i++)h.gems.splice(h.gems.indexOf(key),1);
+        const nk=gemId(P.base.k,P.q+1);
+        h.gems.push(nk);
+        const N=parseGem(nk);
+        SFX.init();SFX.socket();
+        this.log("Der Mystiker verschmilzt drei "+P.name+" zu einem "+N.name+" ("+N.txt+").","loot");
+        this.toast(N.name+" erschaffen.");
+        this.renderTown();this.updateBars();
+      };
+    });
+    el.querySelectorAll("[data-refine]").forEach(b=>{
+      b.onclick=()=>{
+        const key=b.dataset.refine,P=parseGem(key);
+        const cost=refineCost(P.q);
+        if(G.shards<cost||h.gems.indexOf(key)<0)return;
+        G.shards-=cost;
+        h.gems.splice(h.gems.indexOf(key),1);
+        const nk=gemId(P.base.k,P.q+1);
+        h.gems.push(nk);
+        const N=parseGem(nk);
+        SFX.init();SFX.levelup();
+        this.log("Der Mystiker veredelt einen "+P.name+" zu einem "+N.name+" ("+N.txt+").","lvl");
+        G.save();this.renderTown();this.updateBars();
+      };
+    });
     $("reroll").onclick=()=>{
       if(h.gold<50){this.toast("Zu wenig Gold.");return;}
       h.gold-=50;this.refreshShop();SFX.buy();this.renderTown();this.updateBars();
@@ -3821,6 +3958,55 @@ const UI={
     this.bindMeta(el);
   },
   potionPrice(){return 25+G.hero.level*7;},
+  /** Schmiede-Fenster: zeigt den Zugewinn, bevor bezahlt wird */
+  openForge(it){
+    const h=G.hero;
+    const draw=()=>{
+      const up=it.up||0,max=maxUpgrade(),done=up>=max;
+      const cost=smithCost(it);
+      const preview=JSON.parse(JSON.stringify(it));
+      if(!done)upgradeItem(preview);
+      const rows=(a,b)=>{
+        const A=this.itemRows(a),B=this.itemRows(b);
+        const keys=[];for(const k in B)keys.push(k);
+        let x='<div class="cmpgrid"><div class="hd">Eigenschaft</div>'+
+          '<div class="hd" style="text-align:right">Jetzt</div>'+
+          '<div class="hd" style="text-align:right">Danach</div>';
+        for(const k of keys){
+          const va=A[k]||0,vb=B[k]||0,d=Math.round((vb-va)*10)/10;
+          x+='<div>'+k+'</div><div class="ve">'+(va||"\u2014")+'</div>'+
+             '<div class="vn '+(d>0?"up":"")+'">'+(vb||"\u2014")+
+             (d?' <small>(+'+d+')</small>':"")+'</div>';
+        }
+        return x+'</div>';
+      };
+      const html='<div>'+
+        (ASSETS[artIdFor(it)]?'<img class="detail-art" src="'+ASSET_DIR+artIdFor(it)+'.png" alt="">':"")+
+        '<div class="dname" style="color:'+RARITY[it.rar].hex+'">'+iname(it)+'</div>'+
+        '<div class="dsub">Aufwertung '+up+' von '+max+
+        (G.meta.smith?' \u00B7 Meisterschmied: 25 % Rabatt':"")+'</div>'+
+        (done?'<div class="verdict neutral">Dieses Stück ist voll aufgewertet.</div>':
+          '<div style="margin-top:6px">'+rows(it,preview)+'</div>'+
+          '<div class="verdict '+(h.gold>=cost?"good":"bad")+'">Kosten: '+fmt(cost)+
+          ' Gold \u00B7 vorhanden: '+fmt(h.gold)+' Gold</div>')+
+        '<div class="btnrow" style="margin-top:10px">'+
+        (done?"":'<button class="btn p" id="forgeGo"'+(h.gold>=cost?"":" disabled")+'>Aufwerten</button>')+
+        '<button class="btn" id="forgeClose">Schließen</button></div></div>';
+      this.openSheet(html,()=>{
+        const go=$("forgeGo");
+        if(go)go.onclick=()=>{
+          if(h.gold<cost||(it.up||0)>=max)return;
+          h.gold-=cost;upgradeItem(it);h.recompute();
+          SFX.init();SFX.buy();G.parts.ring(120,GROUND-40,RARITY[it.rar].hex);
+          this.log("Der Schmied härtet "+iname(it)+" \u2014 jetzt Stufe +"+it.up+".","loot");
+          this.updateBars();this.renderTown();
+          draw();                       // Fenster mit dem neuen Stand neu aufbauen
+        };
+        $("forgeClose").onclick=()=>this.closeSheet();
+      });
+    };
+    draw();
+  },
   metaHtml(){
     let html="";
     for(const u of META){
