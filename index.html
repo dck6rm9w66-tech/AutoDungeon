@@ -205,6 +205,10 @@ body:not(.nofa) svg.slotico{display:none}
 .branchhead{position:absolute;top:0;transform:translateX(-50%);text-align:center;width:112px}
 .branchhead b{font-size:12px;color:var(--acc)}
 .branchhead small{display:block;color:var(--dim);font-size:9.5px;line-height:1.25}
+.audiorow{display:flex;align-items:center;gap:10px;padding:6px 0}
+.audiorow span{flex:0 0 128px;color:var(--muted);font-size:12.5px}
+.audiorow input[type=range]{flex:1;accent-color:var(--acc);height:18px}
+.audiorow b{min-width:38px;text-align:right;font-size:12px}
 .toggle{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);
   border-radius:10px;padding:7px 10px;font-size:12px;cursor:pointer;margin-top:8px}
 .toggle .sw{width:30px;height:16px;border-radius:9px;background:#15131f;border:1px solid var(--line);
@@ -542,6 +546,145 @@ class AudioEngine{
   skill(){this.tone(440,880,.12,"triangle",.3);this.tone(880,1320,.12,"triangle",.22,.08);}
 }
 const SFX=new AudioEngine();
+
+/* ============================================================================
+   1b. MUSIC — sechs eigens komponierte, lizenzfreie Hintergrundstücke
+   ----------------------------------------------------------------------------
+   Statt fertige MIDI-Dateien einzubinden (die Umgebung hat keinen Netzwerk-
+   zugriff auf Musikarchive und jede eingebettete Fremddatei bräuchte eine
+   Lizenzprüfung), komponiert das Spiel sechs eigene Loops als Notendaten und
+   spielt sie über die Web Audio API — dieselbe Technik, mit der ein MIDI-
+   Sequencer Töne auslöst, nur ohne Bindung an eine externe Datei oder
+   Lizenz. Jedes Stück ist vollständig selbst geschrieben und frei nutzbar.
+   ========================================================================== */
+const NOTE_BASE={C:0,"C#":1,D:2,"D#":3,E:4,F:5,"F#":6,G:7,"G#":8,A:9,"A#":10,B:11};
+/** "A4" -> Frequenz in Hz; "." oder leer -> Pause (null) */
+function noteFreq(tok){
+  if(!tok||tok===".")return null;
+  const m=/^([A-G]#?)(-?\d)$/.exec(tok);
+  if(!m)return null;
+  const semis=NOTE_BASE[m[1]]+(parseInt(m[2],10)+1)*12;
+  return 440*Math.pow(2,(semis-69)/12);
+}
+/** Zerlegt eine mit Leerzeichen getrennte Notenfolge in Frequenzen */
+function parsePattern(str){return str.trim().split(/\s+/).map(noteFreq);}
+
+/* Sechs Stücke, je mit Bass, Begleitung und Melodie. bpm bestimmt das Tempo,
+   step ist die Länge einer Zählzeit in Sechzehnteln (1 = Sechzehntel-Raster). */
+const TRACKS={
+  wander:{n:"Wanderers Pfad",bpm:100,wave:"triangle",
+    bass:"C3 . . . G2 . . . A2 . . . E2 . . .  C3 . . . G2 . . . F2 . . . G2 . . .",
+    mid: "E3 . G3 . C4 . G3 . E3 . G3 . A3 . E3 .  E3 . G3 . C4 . G3 . E3 . F3 . G3 . D3 .",
+    lead:". . . . . . . . . . . . . . . .  C5 . . B4 A4 . G4 . . . . E4 . . . ."},
+  village:{n:"Herdfeuer im Dorf",bpm:112,wave:"square",
+    bass:"F2 . C3 . F2 . C3 .  A2 . E3 . A2 . E3 .",
+    mid: "C4 . A3 . F3 . A3 .  C4 . A3 . E3 . A3 .",
+    lead:"A4 . C5 . A4 F4 . .  G4 . C5 . B4 G4 . ."},
+  halls:{n:"Hallen aus Stein",bpm:84,wave:"sawtooth",
+    bass:"D2 . . D2 . . A1 . . . . . D2 . . .",
+    mid: ". . F3 . . A3 . . F3 . . D3 . . . .",
+    lead:". . . . D4 . . . C4 . . . A3 . . ."},
+  ember:{n:"Emberthron",bpm:128,wave:"sawtooth",
+    bass:"E2 E2 . E2 A1 A1 . A1 E2 E2 . E2 B1 B1 . C2",
+    mid: ". . G2 . . . G2 . . . G2 . . . A2 .",
+    lead:"E4 . E4 D4 . C4 . B3 E4 . E4 D4 . C4 . B3"},
+  steel:{n:"Klinge und Stahl",bpm:140,wave:"square",
+    bass:"E2 . E2 . D2 . D2 .  C2 . C2 . B1 . B1 .",
+    mid: "B3 . . B3 . . A3 .  G3 . . G3 . . F3 .",
+    lead:"E5 D5 . E5 D5 . C5 .  B4 A4 . B4 C5 . D5 ."},
+  reckoning:{n:"Abrechnung",bpm:150,wave:"sawtooth",
+    bass:"C2 C2 G1 G1 A1 A1 F1 F1  C2 C2 G1 G1 E1 E1 D1 D1",
+    mid: "G3 . G3 . F3 . F3 .  G3 . G3 . E3 . D3 .",
+    lead:"C5 . D5 . D#5 . F5 .  G5 F5 D#5 D5 . . C5 ."}
+};
+class MusicEngine{
+  constructor(){
+    this.ctx=null;this.on=true;this.vol=.5;
+    this.master=null;this.current=null;this.nextT=0;this.timer=null;this.gen=0;
+    this.chan=[];   // aktive Gain-Knoten der laufenden Kanäle, für sauberes Überblenden
+  }
+  init(){
+    if(!this.ctx){
+      try{
+        this.ctx=new (window.AudioContext||window.webkitAudioContext)();
+        this.master=this.ctx.createGain();this.master.gain.value=this.on?this.vol:0;
+        this.master.connect(this.ctx.destination);
+      }catch(e){this.on=false;return;}
+    }
+    if(this.ctx.state==="suspended")this.ctx.resume();
+  }
+  setVolume(v){
+    this.vol=clamp(v,0,1);
+    if(this.master)this.master.gain.setTargetAtTime(this.on?this.vol:0,this.ctx.currentTime,.15);
+  }
+  setOn(on){
+    this.on=on;
+    if(this.master)this.master.gain.setTargetAtTime(on?this.vol:0,this.ctx.currentTime,.15);
+    if(on&&this.current)this.play(this.current,true);
+  }
+  /** Wechselt sanft zum angegebenen Stück; ruft man denselben Schlüssel erneut auf, passiert nichts */
+  play(key,force){
+    if(!TRACKS[key])return;
+    if(this.current===key&&!force)return;
+    this.current=key;
+    if(!this.on||!this.ctx)return;
+    this.init();
+    this.gen++;const myGen=this.gen;
+    if(this.timer){clearTimeout(this.timer);this.timer=null;}
+    this.nextT=this.ctx.currentTime+.12;
+    const loop=()=>{
+      if(myGen!==this.gen)return;         // ein neueres Stück hat übernommen
+      this.scheduleBar(TRACKS[key],this.nextT);
+      const bars=2,stepDur=60/TRACKS[key].bpm/4,barDur=stepDur*32;
+      this.nextT+=barDur;
+      this.timer=setTimeout(loop,Math.max(50,(this.nextT-this.ctx.currentTime-.25)*1000));
+    };
+    loop();
+  }
+  /** Plant eine Taktschleife (32 Sechzehntel) für Bass, Begleitung und Melodie */
+  scheduleBar(tr,t0){
+    const c=this.ctx,stepDur=60/tr.bpm/4;
+    const parts=[["bass",.5,.22],["mid",.24,.5],["lead",.34,.32]];
+    for(const [key,gain,rel] of parts){
+      const seq=parsePattern(tr[key]);
+      for(let i=0;i<seq.length;i++){
+        const f=seq[i];if(!f)continue;
+        const t=t0+i*stepDur;
+        const o=c.createOscillator(),g=c.createGain();
+        o.type=tr.wave;o.frequency.value=f;
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(gain*.16,t+.02);
+        g.gain.exponentialRampToValueAtTime(.0001,t+stepDur*rel*4);
+        o.connect(g);g.connect(this.master);
+        o.start(t);o.stop(t+stepDur*rel*4+.05);
+      }
+    }
+  }
+  stop(){
+    this.gen++;this.current=null;
+    if(this.timer){clearTimeout(this.timer);this.timer=null;}
+  }
+}
+const MUSIC=new MusicEngine();
+/** Wählt das passende Stück zur aktuellen Spielsituation */
+function pickTrack(){
+  if(!G||!G.hero||G.state==="dead")return null;
+  if(G.state==="fight"){
+    const e=G.target?G.target():null;
+    if(e&&(e.boss||e.mini))return"reckoning";
+    return"steel";
+  }
+  const b=G.biome;
+  if(!b)return"wander";
+  if(b.lava)return"ember";
+  if(b.indoor)return"halls";
+  if(b.k==="dorf"||b.k==="stadt")return"village";
+  return"wander";
+}
+function updateMusic(){
+  const k=pickTrack();
+  if(k)MUSIC.play(k);
+}
 
 /* ============================================================================
    2. SPRITE-SYSTEM — modulare Pixel-Matrizen + prozedurale Paletten
@@ -1073,14 +1216,14 @@ const LOOT_SLOTS=["head","amulet","weapon","chest","offhand","hands","ring","leg
 function makeItem(level,slot,forceRar,mf){
   slot=slot||pick(LOOT_SLOTS);
   // Die Stufe des Helden bestimmt, was die Welt überhaupt hergibt:
-  // Rares erst ab Stufe 5, Legendäres ab Stufe 12, und die Chance wächst mit der Stufe.
+  // Rares erst ab Stufe 5, Legendäres ab Stufe 10; die Chance wächst milde mit der Stufe.
   const gate=level>=10?3:level>=5?2:1;
   let r;
   if(forceRar!==undefined&&forceRar!==null)r=Math.min(forceRar,gate);
   else{
-    const lvlFactor=1+Math.min(2.2,level*.045);
+    const lvlFactor=1+Math.min(.35,level*.01);
     const roll=Math.random()*100/((1+(mf||0)/100)*lvlFactor);
-    r=roll<.043?3:roll<.31?2:roll<1.15?1:0;
+    r=roll<.22?3:roll<1.4?2:roll<9?1:0;
     r=Math.min(r,gate);
   }
   const R=RARITY[r];
@@ -1741,6 +1884,7 @@ class Game{
     else{this.prevBiome=null;this.blend=1;}
     this.biome=this.rollBiome();
     this.layers=this.buildLayers();
+    updateMusic();
     this.biomeLeft=ri(4,8);            // so viele Begegnungen bleibt die Umgebung
     if(this.biome.indoor)this.weather=this.biome.dust?"fog":"clear";
     if(!silent&&this.hero){
@@ -1778,6 +1922,7 @@ class Game{
     this.state="walk";this.lastBoss=0;this.bossPending=false;
     this.parts.p.length=0;this.fct.t.length=0;this.drops.length=0;
     UI.clearLog();
+    updateMusic();
     UI.log("Ein neuer Run beginnt: "+name+", "+RACES[race].n+"-"+CLASSES[cls].n+".","sys");
     UI.log("Ziel: so tief wie möglich. Seelensplitter überdauern den Tod.","sys");
     UI.log("Magische Funde sind selten. Vergleiche im Inventar, bevor du etwas anlegst.","sys");
@@ -1870,7 +2015,7 @@ class Game{
         if(e.x>e.tx){e.x=Math.max(e.tx,e.x-135*dt);}
         if(e.x>e.tx)allIn=false;
       }
-      if(allIn){this.state="fight";this.firstHit=true;h.atkTimer=.35;}
+      if(allIn){this.state="fight";this.firstHit=true;h.atkTimer=.35;updateMusic();}
     }else if(this.state==="fight"){
       h.anim+=dt*3;
       h.atkTimer-=dt*h.atkPerSec;
@@ -1892,7 +2037,8 @@ class Game{
       this.vicT-=dt;
       if(this.vicT<=0){this.state="walk";this.enemy=null;this.enemies=[];
         this.dist=0;this.nextEncounter=rnd(80,150);
-        if(--this.biomeLeft<=0)this.changeBiome();}
+        if(--this.biomeLeft<=0)this.changeBiome();
+        updateMusic();}
     }
     if(h.flash>0)h.flash-=dt;
     for(const e of this.enemies){
@@ -2374,6 +2520,7 @@ class Game{
     this.render();
     this.grabFrame();
     this.state="dead";
+    MUSIC.stop();
     this.parts.add(120,GROUND-40,60,{spdMin:30,spdMax:200,lifeMin:.6,lifeMax:1.4,
       col:()=>pick(["#ff5566","#8d0801","#ffffff"]),size:2,g:300});
     this.doShake(.8,7);SFX.death();
@@ -3146,6 +3293,18 @@ class Game{
         totalDist:this.totalDist,bossMarks:this.bossMarks
       });
     }
+  }
+  async loadAudioSettings(){
+    const a=await Store.get("ad_audio");
+    if(a){
+      MUSIC.vol=clamp(a.musicVol===undefined?.5:a.musicVol,0,1);
+      MUSIC.on=a.musicOn!==false;
+      SFX.on=a.sfxOn!==false;
+      SFX.vol=clamp(a.sfxVol===undefined?.28:a.sfxVol,0,1);
+    }
+  }
+  async saveAudioSettings(){
+    await Store.set("ad_audio",{musicVol:MUSIC.vol,musicOn:MUSIC.on,sfxOn:SFX.on,sfxVol:SFX.vol});
   }
   async loadMeta(){
     const m=await Store.get("ad_meta");
@@ -4199,8 +4358,21 @@ const UI={
       '<div class="h3">Spielstand</div>'+
       '<div class="btnrow"><button class="btn p" id="btnSave">Speichern (JSON-Datei)</button>'+
       '<button class="btn" id="btnImport">JSON einspielen</button>'+
-      '<button class="btn" id="btnLoad">Letzten Run laden</button>'+
-      '<button class="btn" id="btnAudio">Ton: '+(SFX.on?"an":"aus")+'</button></div>'+
+      '<button class="btn" id="btnLoad">Letzten Run laden</button></div>'+
+      '<div class="h3">Klang</div>'+
+      '<div class="audiorow"><span>Soundeffekte</span>'+
+      '<button class="btn" id="btnAudio">'+(SFX.on?"An":"Aus")+'</button></div>'+
+      '<div class="audiorow"><span>Effektlautstärke</span>'+
+      '<input type="range" id="sfxVol" min="0" max="100" value="'+Math.round(SFX.vol*100)+'">'+
+      '<b id="sfxVolLb">'+Math.round(SFX.vol*100)+'%</b></div>'+
+      '<div class="audiorow"><span>Musik</span>'+
+      '<button class="btn" id="btnMusic">'+(MUSIC.on?"An":"Aus")+'</button></div>'+
+      '<div class="audiorow"><span>Musiklautstärke</span>'+
+      '<input type="range" id="musicVol" min="0" max="100" value="'+Math.round(MUSIC.vol*100)+'">'+
+      '<b id="musicVolLb">'+Math.round(MUSIC.vol*100)+'%</b></div>'+
+      '<div class="hint">Sechs eigens komponierte, lizenzfreie Hintergrundstücke wechseln automatisch '+
+      'zwischen Erkundung, Dorf, Gemäuer, Höllenschlund, Kampf und Bosskampf. Aktuell: '+
+      (TRACKS[MUSIC.current]?TRACKS[MUSIC.current].n:"\u2014")+'</div>'+
       '<div class="hint">Der Fortschritt wird nach jedem Kampf automatisch gesichert.</div>'+
       '<div class="h3">Statistik dieses Runs</div>'+
       row("Getötete Gegner",h.kills)+row("Besiegte Bosse",h.bossKills)+
@@ -4219,7 +4391,18 @@ const UI={
     $("btnSave").onclick=()=>{G.save();this.downloadSave();};
     $("btnImport").onclick=()=>this.showImport();
     $("btnLoad").onclick=async()=>{const ok=await G.loadRun();this.toast(ok?"Run geladen.":"Kein Spielstand gefunden.");};
-    $("btnAudio").onclick=()=>{SFX.on=!SFX.on;SFX.init();this.renderSys();};
+    $("btnAudio").onclick=()=>{SFX.on=!SFX.on;SFX.init();G.saveAudioSettings();this.renderSys();};
+    $("btnMusic").onclick=()=>{
+      MUSIC.init();MUSIC.setOn(!MUSIC.on);
+      if(MUSIC.on)updateMusic();
+      G.saveAudioSettings();this.renderSys();
+    };
+    const sv=$("sfxVol");
+    if(sv)sv.oninput=()=>{SFX.vol=+sv.value/100;$("sfxVolLb").textContent=sv.value+"%";};
+    if(sv)sv.onchange=()=>{G.saveAudioSettings();};
+    const mv=$("musicVol");
+    if(mv)mv.oninput=()=>{MUSIC.init();MUSIC.setVolume(+mv.value/100);$("musicVolLb").textContent=mv.value+"%";};
+    if(mv)mv.onchange=()=>{G.saveAudioSettings();};
     $("btnGiveUp").onclick=()=>{if(G.state==="dead")return;G.hero.hp=0;G.heroDies();};
     $("btnWipe").onclick=async()=>{
       await Store.del("ad_meta");await Store.del("ad_run");
@@ -4398,7 +4581,7 @@ const UI={
       };
       $("cStart").onclick=()=>{
         const n=($("cName").value||"").trim()||this.randomName();
-        SFX.init();o.classList.remove("on");
+        SFX.init();MUSIC.init();o.classList.remove("on");
         G.startRun(n,race,cls);
         if(G.hero){G.hero.tint=tint;G.hero.look=lookIdx;}
       };
@@ -4622,6 +4805,7 @@ loadAssets();
 const G=new Game();
 UI.init();
 (async function boot(){
+  await G.loadAudioSettings();
   await G.loadMeta();
   const run=await Store.get("ad_run");
   UI.showIntro(!!run);
@@ -4629,7 +4813,7 @@ UI.init();
 })();
 checkFontAwesome();
 setTimeout(checkFontAwesome,1500);      // Stylesheet kann später eintreffen
-document.addEventListener("pointerdown",()=>SFX.init(),{once:true});
+document.addEventListener("pointerdown",()=>{SFX.init();MUSIC.init();updateMusic();},{once:true});
 </script>
 </body>
 </html>
