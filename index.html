@@ -61,6 +61,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc2);outl
 
 /* ---------- Layout ---------- */
 .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.85fr);gap:14px;align-items:start}
+/* Ohne min-width:0 dehnt ein breites Kind (die Chronik) die ganze Rasterspalte */
+.grid>*{min-width:0}
 @media (max-width:900px){.grid{grid-template-columns:1fr}}
 
 .panel{background:linear-gradient(180deg,var(--panel) 0%,#1a172a 100%);
@@ -106,12 +108,22 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc2);outl
 
 /* ---------- Tabs ---------- */
 .tabs{display:flex;gap:4px;padding:6px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.tabs button{flex:1;min-width:64px;background:transparent;border:1px solid transparent;border-radius:9px;
-  padding:7px 6px;font-size:12px;color:var(--muted);transition:background .18s,color .18s,border-color .18s}
+.tabs button{position:relative;flex:1;min-width:0;background:transparent;border:1px solid transparent;
+  border-radius:9px;padding:9px 4px;color:var(--muted);
+  transition:background .18s,color .18s,border-color .18s;display:flex;align-items:center;justify-content:center}
+.tabico{width:19px;height:19px;font-size:17px;line-height:1;display:block}
+svg.tabico{fill:currentColor}
+body.nofa i.tabico{display:none}
+body:not(.nofa) svg.tabico{display:none}
+.tabs .badge{position:absolute;top:2px;right:4px;min-width:15px;height:15px;line-height:15px;
+  border-radius:8px;background:var(--acc2);color:#0e1a20;font-size:10px;font-weight:700;text-align:center;
+  padding:0 3px;box-shadow:0 0 7px rgba(139,233,253,.6)}
+.tabs button.active .badge{background:#14121f;color:var(--acc2)}
 .tabs button:hover{color:var(--text);background:var(--panel2)}
 .tabs button.active{color:#14121f;background:linear-gradient(180deg,#d3b0ff,var(--acc));border-color:#d3b0ff;font-weight:700}
 .tabs button.alert:not(.active){color:var(--acc2);border-color:var(--acc2);box-shadow:0 0 10px rgba(139,233,253,.35)}
-.tabbody{position:relative;min-height:430px;max-height:min(72vh,660px);overflow-y:auto;padding:12px}
+.tabbody{position:relative;min-height:430px;max-height:min(72vh,660px);overflow-y:auto;
+  overflow-x:hidden;padding:12px;min-width:0}
 .tab{display:none;opacity:0;transform:translateY(6px);transition:opacity .22s,transform .22s}
 .tab.active{display:block}
 .tab.shown{opacity:1;transform:none}
@@ -311,7 +323,7 @@ body:not(.nofa) svg.slotico{display:none}
 .pip.on{background:var(--soul);box-shadow:0 0 7px var(--soul)}
 
 /* ---------- Weg-Strahl: Chronik der gefallenen Helden ---------- */
-.path{position:relative;margin:16px 0 8px;padding:66px 10px 62px;
+.path{position:relative;max-width:100%;margin:16px 0 8px;padding:66px 10px 62px;
   background:linear-gradient(180deg,#1c1930,#15121f);border:1px solid var(--line);border-radius:14px;
   overflow-x:auto;overflow-y:hidden}
 .pathinner{position:relative;min-width:100%;height:26px}
@@ -431,14 +443,7 @@ input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px 
 
     <!-- ================= RECHTS: Management ================= -->
     <aside class="panel">
-      <nav class="tabs" id="tabs">
-        <button data-tab="hero" class="active">Held</button>
-        <button data-tab="inv" id="tabInv">Inventar</button>
-        <button data-tab="skills" id="tabSkills">Fähigkeiten</button>
-        <button data-tab="town">Stadt</button>
-        <button data-tab="ahnen">Ahnen</button>
-        <button data-tab="sys">System</button>
-      </nav>
+      <nav class="tabs" id="tabs"></nav>
       <div class="tabbody">
         <div class="tab active shown" id="tab-hero"></div>
         <div class="tab" id="tab-inv"></div>
@@ -473,6 +478,12 @@ const hsl=(h,s,l)=>"hsl("+((h%360)+360)%360+","+s+"%,"+l+"%)";
 const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e4?(n/1e3).toFixed(1)+"k":Math.floor(n);
 function lerpCol(c1,c2,t){return [lerp(c1[0],c2[0],t),lerp(c1[1],c2[1],t),lerp(c1[2],c2[2],t)];}
 const rgb=c=>"rgb("+(c[0]|0)+","+(c[1]|0)+","+(c[2]|0)+")";
+/** #rrggbb + Deckkraft -> rgba(); für Tönungen in Segensfarben */
+function hexA(hex,a){
+  const m=/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex||"");
+  if(!m)return "rgba(255,255,255,"+a+")";
+  return "rgba("+parseInt(m[1],16)+","+parseInt(m[2],16)+","+parseInt(m[3],16)+","+a+")";
+}
 /** Quadratischer Schwierigkeitsanteil, der erst ab Stufe `off` einsetzt */
 const QS=(lvl,off)=>{const v=Math.max(0,lvl-off);return v*v;};
 
@@ -959,6 +970,41 @@ const SLOT_ICON={
                '<path d="M8 8h8v2H8zm0 4.4h8v2H8z" fill="#131120"/>'}
 };
 SLOT_ICON.rune2=SLOT_ICON.rune;SLOT_ICON.rune3=SLOT_ICON.rune;
+/* Symbole der Reiter — ebenfalls mit eingebautem SVG-Ersatz */
+const TAB_ICON={
+  hero:  {n:"Held",       fa:"fa-user",
+          svg:'<path d="M12 3.2a4.2 4.2 0 110 8.4 4.2 4.2 0 010-8.4z"/>'+
+              '<path d="M3.6 21c0-4.3 3.8-7 8.4-7s8.4 2.7 8.4 7z"/>'},
+  inv:   {n:"Inventar",   fa:"fa-briefcase",
+          svg:'<path d="M9 2.6h6a2 2 0 012 2v1.8h-2.4V5H9.4v1.4H7V4.6a2 2 0 012-2z"/>'+
+              '<path d="M2.6 7.6h18.8a1.6 1.6 0 011.6 1.6v9.6a2 2 0 01-2 2H3a2 2 0 01-2-2V9.2a1.6 1.6 0 011.6-1.6z"/>'},
+  skills:{n:"Fähigkeiten",fa:"fa-star",
+          svg:'<path d="M12 2.4l2.9 6 6.6.9-4.8 4.6 1.2 6.5-5.9-3.2-5.9 3.2 1.2-6.5L2.5 9.3l6.6-.9z"/>'},
+  town:  {n:"Stadt",      fa:"fa-store",
+          svg:'<path d="M3 3.4h18l1.6 5.2a3 3 0 01-5.8 1.1 3 3 0 01-5.8 0 3 3 0 01-5.8 0A3 3 0 011.4 8.6z"/>'+
+              '<path d="M4 12.4h16v8.2H4z"/>'},
+  ahnen: {n:"Ahnen",      fa:"fa-skull",
+          svg:'<path d="M12 2.4c5 0 8.6 3.4 8.6 8 0 2.8-1.4 4.6-3 5.8v3.4H6.4v-3.4c-1.6-1.2-3-3-3-5.8 0-4.6 3.6-8 8.6-8z"/>'+
+              '<circle cx="8.8" cy="10.6" r="2.1" fill="#131120"/>'+
+              '<circle cx="15.2" cy="10.6" r="2.1" fill="#131120"/>'},
+  sys:   {n:"System",     fa:"fa-gear",
+          svg:'<path d="M10.2 1.8h3.6l.5 2.6 2.2 1.3 2.5-.9 1.8 3.1-2 1.7v2.5l2 1.7-1.8 3.1-2.5-.9-2.2 1.3-.5 2.6h-3.6l-.5-2.6-2.2-1.3-2.5.9-1.8-3.1 2-1.7v-2.5l-2-1.7 1.8-3.1 2.5.9 2.2-1.3z"/>'+
+              '<circle cx="12" cy="11.6" r="3.1" fill="#1e1b2e"/>'}
+};
+function tabIcon(k){
+  const I=TAB_ICON[k];
+  return '<i class="fa-solid '+I.fa+' tabico" aria-hidden="true"></i>'+
+    '<svg class="tabico" viewBox="0 0 24 24" aria-hidden="true">'+I.svg+'</svg>'+
+    '<span class="badge" hidden></span>';
+}
+/** Baut die Reiterleiste aus Symbolen auf */
+function buildTabs(){
+  const order=["hero","inv","skills","town","ahnen","sys"];
+  $("tabs").innerHTML=order.map((k,i)=>
+    '<button data-tab="'+k+'" id="tab_'+k+'"'+(i===0?' class="active"':"")+
+    ' title="'+TAB_ICON[k].n+' ('+(i+1)+')" aria-label="'+TAB_ICON[k].n+'">'+
+    tabIcon(k)+'</button>').join("");
+}
 /** Piktogramm für einen freien Platz — Font Awesome mit eingebautem SVG-Ersatz */
 function slotIcon(slot){
   const I=SLOT_ICON[slot]||SLOT_ICON.weapon;
@@ -999,7 +1045,7 @@ function loadAssets(){
    danach nur noch als Bild kopiert — sonst kostet die vierfache Pixelzahl zu viel. */
 const SPR_CACHE={};let SPR_KEYS=0;
 function spriteBitmap(sp,pal,flash){
-  const key=(sp.id||"?")+"|"+(sp._hue||0)+"|"+(flash||pal[2]+pal[4]+pal[6]);
+  const key=(sp.id||"?")+"|"+(sp._tint||"-")+"|"+(flash||pal[2]+pal[4]+pal[6]);
   let cv=SPR_CACHE[key];
   if(cv)return cv;
   if(SPR_KEYS>240){for(const k in SPR_CACHE)delete SPR_CACHE[k];SPR_KEYS=0;}
@@ -1008,13 +1054,22 @@ function spriteBitmap(sp,pal,flash){
   const x=cv.getContext("2d");
   const art=ASSETS[sp.id];
   if(art){
-    // Eigene Zeichnung: nur im Farbton auf die Gegnerart drehen
-    const dh=Math.round(((sp.hue===undefined?ASSET_HUE:sp.hue)-ASSET_HUE));
-    x.save();
-    if(sp._hue)x.filter="hue-rotate("+sp._hue+"deg)";
     x.drawImage(art,0,0,sp.w,sp.h);
-    x.restore();
-    if(flash){x.globalCompositeOperation="source-atop";x.fillStyle=flash;x.fillRect(0,0,sp.w,sp.h);}
+    if(sp._tint){
+      /* Farbvariante der Gegnerart: "color" übernimmt Farbton und Sättigung
+         der Füllung und behält die Helligkeit der Zeichnung — dadurch bleibt
+         die Schattierung erhalten. Anschließend wird die Transparenz der
+         Vorlage wieder aufgeprägt, sonst würde die Füllung den ganzen
+         Rahmen einfärben. */
+      x.globalCompositeOperation="color";
+      x.fillStyle=sp._tint;
+      x.fillRect(0,0,sp.w,sp.h);
+      x.globalCompositeOperation="destination-in";
+      x.drawImage(art,0,0,sp.w,sp.h);
+      x.globalCompositeOperation="source-over";
+    }
+    if(flash){x.globalCompositeOperation="source-atop";x.fillStyle=flash;x.fillRect(0,0,sp.w,sp.h);
+      x.globalCompositeOperation="source-over";}
     SPR_CACHE[key]=cv;SPR_KEYS++;
     return cv;
   }
@@ -1032,7 +1087,8 @@ function spriteBitmap(sp,pal,flash){
 }
 /** `scale` = logische Pixel je URSPRUNGS-Pixel; die Matrix ist doppelt so fein */
 function drawSprite(ctx,sp,cx,groundY,scale,pal,flip,flash,alpha,hue){
-  sp._hue=hue===undefined?0:Math.round(((hue-ASSET_HUE)%360+540)%360-180);
+  // Farbton der Gegnerart als Einfärbung — ohne Farbton bleibt die Zeichnung, wie sie ist
+  sp._tint=(hue===undefined||hue===null)?null:hsl(hue,62,48);
   const u=scale/(sp.f||1);
   const w=sp.w*u,hh=sp.h*u;
   const x0=Math.round((cx-w/2)*2)/2,y0=Math.round((groundY-sp.base*u)*2)/2;
@@ -1117,10 +1173,11 @@ class FloatTexts{
    4. ITEMS, AFFIXE, EDELSTEINE
    ========================================================================== */
 const RARITY=[
-  {n:"Normal",c:"var(--r-0)",hex:"#b6b2c9",aff:0,mult:1.00,sock:0},
-  {n:"Magisch",c:"var(--r-1)",hex:"#5aa9ff",aff:2,mult:1.28,sock:0},
-  {n:"Rar",c:"var(--r-2)",hex:"#f2e06a",aff:4,mult:1.62,sock:2},
-  {n:"Legendär",c:"var(--r-3)",hex:"#ff9a3c",aff:5,mult:2.10,sock:3}
+  // sockP = Wahrscheinlichkeit, dass das Stück überhaupt einen Sockel trägt
+  {n:"Normal",c:"var(--r-0)",hex:"#b6b2c9",aff:0,mult:1.00,sock:1,sockP:.020},
+  {n:"Magisch",c:"var(--r-1)",hex:"#5aa9ff",aff:2,mult:1.28,sock:2,sockP:.250},
+  {n:"Rar",c:"var(--r-2)",hex:"#f2e06a",aff:4,mult:1.62,sock:2,sockP:.850},
+  {n:"Legendär",c:"var(--r-3)",hex:"#ff9a3c",aff:5,mult:2.10,sock:3,sockP:1.00}
 ];
 const SLOTS={
   weapon:{n:"Waffe",ico:"\u2694"}, offhand:{n:"Nebenhand",ico:"\u25D8"},
@@ -1327,7 +1384,8 @@ function makeItem(level,slot,forceRar,mf){
     const sk=pick(SKILLS);
     it.skillK=sk.k;it.skillV=r===3?ri(1,2):1;
   }
-  const sc=R.sock?ri(r===3?1:0,R.sock):0;
+  // Sockel: erst die Chance auf überhaupt einen, dann die Anzahl
+  const sc=(R.sock&&Math.random()<R.sockP)?ri(1,R.sock):0;
   for(let i=0;i<sc;i++)it.sockets.push(null);
   if(r===3){
     const u=pick(UNIQUES);it.uniq=u.e;it.uniqTxt=u.d;it.name=u.n;
@@ -2035,6 +2093,8 @@ class Game{
     this.parts.update(dt);this.fct.update(dt);
     if(this.shake>0){this.shake-=dt;if(this.shake<0)this.shake=0;}
     if(this.lootGlow>0)this.lootGlow-=dt;
+    if(this.flash&&this.flash.t>0)this.flash.t-=dt;
+    if(this.boonPulse>0)this.boonPulse-=dt*1.6;
     for(let i=this.drops.length-1;i>=0;i--){const d=this.drops[i];d.life-=dt;d.y+=d.vy*dt;d.vy+=260*dt;
       if(d.y>GROUND){d.y=GROUND;d.vy=0;}if(d.life<=0)this.drops.splice(i,1);}
     if(!this.hero||this.state==="dead"||this.state==="idle")return;
@@ -2075,6 +2135,20 @@ class Game{
       h.anim+=dt*9;
       if(this.dist>=this.nextEncounter)this.spawnEnemy();
     }else if(this.state==="approach"){
+      if(this.intro){                        // Auftritt läuft: niemand bewegt sich
+        this.intro.t-=dt;
+        const k=1-this.intro.t/this.intro.max;
+        const e=this.intro.foe;
+        if(Math.random()<.55)
+          this.parts.add(e.x+rnd(-26,26),GROUND,1,{dir:-Math.PI/2,spread:.5,
+            spdMin:30,spdMax:110,lifeMin:.6,lifeMax:1.4,
+            col:this.intro.boss?"#ff7ad9":"#ffb347",size:2,g:-40,glow:1});
+        if(this.intro.t<=0){
+          this.intro=null;
+          this.doShake(.35,4);
+        }
+        return;
+      }
       h.anim+=dt*6;
       let allIn=true;
       for(const e of this.enemies){
@@ -2162,8 +2236,16 @@ class Game{
       if(at>=0)h.boons[at].t=dur;
       else h.boons.push({k:b.k,n:b.n,e:b.e,col:b.col,t:dur,max:dur});
       h.recompute();
-      this.fct.add(126,GROUND-70,b.n,"loot");
-      this.parts.ring(126,GROUND-44,b.col);
+      // Kräftiger Aufnahmeeffekt: Blitz, drei Schockwellen, Funkenfontäne
+      this.flash={col:b.col,t:.45,max:.45};
+      this.boonPulse=1;
+      for(let i=0;i<3;i++)setTimeout(()=>this.parts.ring(126,GROUND-44,b.col),i*90);
+      this.parts.add(126,GROUND-44,42,{spdMin:40,spdMax:220,lifeMin:.5,lifeMax:1.2,
+        col:b.col,size:3,g:180,glow:1});
+      this.parts.add(126,GROUND-20,26,{dir:-Math.PI/2,spread:.6,spdMin:70,spdMax:190,
+        lifeMin:.6,lifeMax:1.4,col:"#ffffff",size:2,g:120,glow:1});
+      this.doShake(.3,3);
+      this.fct.add(126,GROUND-78,b.n,"crit");
       UI.log(b.n+" aufgenommen \u2014 "+effLines(b.e,1).join(", ")+" für "+dur+" s.","lvl");
       SFX.levelup();UI.renderAll();
       return;
@@ -2288,11 +2370,18 @@ class Game{
     }
     this.enemy=this.enemies[0];
     this.state="approach";
-    if(isBoss){SFX.boss();this.doShake(.6,5);
+    if(isBoss||isMini){
+      // Großer Auftritt: der Gegner steht sofort da, alles andere hält inne
+      for(const e of this.enemies)e.x=e.tx;
+      this.intro={t:isBoss?3.0:2.0,max:isBoss?3.0:2.0,boss:isBoss,
+        name:this.enemy.name,foe:this.enemy};
+      this.doShake(.6,isBoss?8:5);
+    }
+    if(isBoss){SFX.boss();
       UI.log("BOSS: "+this.enemy.name+" versperrt den Weg!","boss");
       this.fct.add(210,70,this.enemy.name.toUpperCase(),"crit");
     }else if(isMini){
-      SFX.boss();this.doShake(.4,4);
+      SFX.boss();
       UI.log("MINIBOSS: "+this.enemy.name+" tritt dir entgegen!","boss");
       this.fct.add(300,64,this.enemy.name.toUpperCase(),"crit");
     }else if(count>1){
@@ -2658,6 +2747,7 @@ class Game{
     this.drawWeather(c);
     this.drawNightTint(c);
     this.fct.draw(c);
+    this.drawIntro(c);
     this.drawHud(c);
     c.restore();
   }
@@ -3137,12 +3227,13 @@ class Game{
     if(look.wide){c.save();c.translate(x,0);c.scale(look.wide,1);c.translate(-x,0);}
     drawSprite(c,sp,x,gy,sc,pal,false,h.flash>0?"#ffffff":null,1,hasArt?ASSET_HUE:hue);
     if(look.wide)c.restore();
+    this.drawBoonAura(c,x,gy,h);
     if(this.rideT>0&&h.mount){              // während des Ritts das Tier darunter
       const msp=SPRITES[h.mount.sp];
       if(msp)drawSprite(c,msp,x+4,GROUND,3.4,palette(28,45),false,null,1);
     }
     // Merkmale nur zeichnen, wenn sie nicht schon in der Grafik stecken
-    if(!hasArt)drawRaceFeatures(c,look,x,gy-sp.base*(sc/sp.f)+7*look.sc,look.sc,!!h.equip.head);
+    if(!hasArt)drawRaceFeatures(c,look,x,gy-sp.base*(sc/sp.f)+7*look.sc,look.sc,false);
     // Umhang: weht beim Laufen nach hinten
     if(h.equip.chest&&h.equip.chest.rar>=1){
       const cp=palette((hue+180)%360,52);
@@ -3156,19 +3247,8 @@ class Game{
       c.fillStyle=cp[2];
       c.fillRect(x-6,gy-31,7,3);
     }
-    // Helm mit Federbusch
-    if(h.equip.head){
-      const hp2=palette(h.equip.head.hue,60);
-      const top=gy-sp.base*(sc/sp.f);
-      c.fillStyle=hp2[2];c.fillRect(x-8,top+1,16,5);
-      c.fillStyle=hp2[3];c.fillRect(x-8,top+1,16,2);
-      c.fillStyle=hp2[1];c.fillRect(x-8,top+6,16,1.5);
-      if(h.equip.head.rar>=2){
-        c.fillStyle=RARITY[h.equip.head.rar].hex;
-        c.fillRect(x-1,top-4,2.5,5);
-        c.fillRect(x-3,top-6,6,2.5);
-      }
-    }
+    // Kopfbedeckung wird bewusst nicht gezeichnet: die Klassen-Sprites tragen
+    // bereits Helm, Kapuze oder Hut, ein zweiter darüber sah falsch aus.
     // Waffe (Farbe/Form folgt dem ausgerüsteten Item — Paperdoll-Update)
     const w=h.equip.weapon;
     const wy=gy-22;
@@ -3220,19 +3300,48 @@ class Game{
       const op=palette(h.equip.offhand.hue,60);
       c.save();c.translate(x-13,wy+6);
       if(RARITY[h.equip.offhand.rar].hex!=="#b6b2c9"){c.shadowBlur=6;c.shadowColor=RARITY[h.equip.offhand.rar].hex;}
-      // Schild mit Beschlag und Buckel
-      c.fillStyle=op[1];
-      c.beginPath();c.moveTo(-5,-8);c.lineTo(5,-8);c.lineTo(5,4);c.lineTo(0,8);c.lineTo(-5,4);c.closePath();c.fill();
-      c.fillStyle=op[2];
-      c.beginPath();c.moveTo(-4,-7);c.lineTo(4,-7);c.lineTo(4,3.5);c.lineTo(0,7);c.lineTo(-4,3.5);c.closePath();c.fill();
-      c.fillStyle=op[3];c.fillRect(-4,-7,8,2.5);
-      c.fillStyle=op[7]||op[3];
-      c.beginPath();c.arc(0,-1,2.2,0,7);c.fill();
+      // Nebenhand: eigene Grafik, sonst der gezeichnete Schild
+      const oart=ASSETS[artIdFor(h.equip.offhand)];
+      if(oart){
+        c.drawImage(oart,-9,-11,18,20);
+      }else{
+        c.fillStyle=op[1];
+        c.beginPath();c.moveTo(-5,-8);c.lineTo(5,-8);c.lineTo(5,4);c.lineTo(0,8);c.lineTo(-5,4);c.closePath();c.fill();
+        c.fillStyle=op[2];
+        c.beginPath();c.moveTo(-4,-7);c.lineTo(4,-7);c.lineTo(4,3.5);c.lineTo(0,7);c.lineTo(-4,3.5);c.closePath();c.fill();
+        c.fillStyle=op[3];c.fillRect(-4,-7,8,2.5);
+        c.fillStyle=op[7]||op[3];
+        c.beginPath();c.arc(0,-1,2.2,0,7);c.fill();
+      }
       c.restore();
     }
     // Statusanzeigen
     if(h.status.poison>0){
       if(Math.random()<.25)this.parts.puff(x+rnd(-6,6),gy-30,"#7cd66a");
+    }
+  }
+  /** Sichtbare Aura, solange Segen wirken: Lichtkreis, kreisende Funken, Aufwind */
+  drawBoonAura(c,x,gy,h){
+    if(!h.boons||!h.boons.length)return;
+    const t=this.time;
+    for(let i=0;i<h.boons.length;i++){
+      const b=h.boons[i];
+      const fade=clamp(b.t/3,0,1);                 // klingt in den letzten Sekunden aus
+      const puls=.6+.4*Math.sin(t*3.4+i*1.7);
+      c.save();
+      c.globalAlpha=.30*fade*puls;
+      c.strokeStyle=b.col;c.lineWidth=2;
+      c.shadowBlur=12;c.shadowColor=b.col;
+      const r=20+i*4+Math.sin(t*2.2+i)*2;
+      c.beginPath();c.ellipse(x,gy-4,r,r*.32,0,0,7);c.stroke();
+      c.globalAlpha=.5*fade;
+      const a=t*(1.6+i*.5)+i*2.1;                  // kreisender Funke je Segen
+      const px=x+Math.cos(a)*r, py=gy-4+Math.sin(a)*r*.32;
+      c.fillStyle=b.col;c.fillRect(px-1.5,py-1.5,3,3);
+      c.restore();
+      if(Math.random()<.20*fade)
+        this.parts.add(x+rnd(-12,12),gy-2,1,{dir:-Math.PI/2,spread:.5,spdMin:12,spdMax:38,
+          lifeMin:.5,lifeMax:1.1,col:b.col,size:2,g:-24,glow:1});
     }
   }
   drawEnemies(c){
@@ -3317,6 +3426,69 @@ class Game{
     if(night>0){c.fillStyle="rgba(24,20,58,"+(night*.42)+")";c.fillRect(0,0,W,H);}
     if(this.weather==="rain"){c.fillStyle="rgba(20,28,60,.18)";c.fillRect(0,0,W,H);}
     if(this.lootGlow>0){c.fillStyle="rgba(139,233,253,"+(this.lootGlow*.12)+")";c.fillRect(0,0,W,H);}
+    if(this.hero&&this.hero.boons&&this.hero.boons.length){
+      // Farbiger Randschimmer in der Farbe des jüngsten Segens
+      const b=this.hero.boons[this.hero.boons.length-1];
+      const p=.10+.05*Math.sin(this.time*3)+clamp(this.boonPulse||0,0,1)*.25;
+      const g=c.createRadialGradient(W/2,H/2,H*.28,W/2,H/2,H*.78);
+      g.addColorStop(0,"rgba(0,0,0,0)");
+      g.addColorStop(1,hexA(b.col,p));
+      c.fillStyle=g;c.fillRect(0,0,W,H);
+    }
+    if(this.flash&&this.flash.t>0){         // kurzer Vollbildblitz
+      c.fillStyle=hexA(this.flash.col,(this.flash.t/this.flash.max)*.5);
+      c.fillRect(0,0,W,H);
+    }
+  }
+  /** Inszenierter Auftritt: Abdunklung, Schockwellen, Namensbanner, Lichtsäule */
+  drawIntro(c){
+    const I=this.intro;if(!I)return;
+    const k=clamp(1-I.t/I.max,0,1);              // 0 = Beginn, 1 = Ende
+    const e=I.foe;
+    const col=I.boss?"#ff7ad9":"#ffb347";
+    const inOut=Math.min(k*4,1)*Math.min((1-k)*5,1);   // ein- und ausblenden
+    // Abdunklung mit Lichtkegel auf dem Gegner
+    const g=c.createRadialGradient(e.x,GROUND-e.ph*.5,10,e.x,GROUND-e.ph*.5,190);
+    g.addColorStop(0,"rgba(0,0,0,0)");
+    g.addColorStop(1,"rgba(0,0,0,"+(.62*inOut).toFixed(2)+")");
+    c.fillStyle=g;c.fillRect(0,0,W,H);
+    // Lichtsäule
+    c.save();c.globalAlpha=.22*inOut;
+    const lg=c.createLinearGradient(0,0,0,GROUND);
+    lg.addColorStop(0,hexA(col,0));lg.addColorStop(1,hexA(col,.9));
+    c.fillStyle=lg;
+    c.beginPath();
+    c.moveTo(e.x-14,0);c.lineTo(e.x+14,0);
+    c.lineTo(e.x+e.pw*.5,GROUND);c.lineTo(e.x-e.pw*.5,GROUND);
+    c.closePath();c.fill();c.restore();
+    // Drei Schockwellen auf dem Boden
+    for(let i=0;i<3;i++){
+      const p=(k*1.9-i*.22);
+      if(p<=0||p>=1)continue;
+      c.save();c.globalAlpha=(1-p)*.8*inOut;
+      c.strokeStyle=col;c.lineWidth=2.5-p*1.8;
+      c.shadowBlur=12;c.shadowColor=col;
+      c.beginPath();c.ellipse(e.x,GROUND+2,20+p*170,(20+p*170)*.22,0,0,7);c.stroke();
+      c.restore();
+    }
+    // Kurzes Aufblitzen des Gegners zu Beginn
+    if(k<.14){c.fillStyle="rgba(255,255,255,"+((.14-k)/.14*.5).toFixed(2)+")";c.fillRect(0,0,W,H);}
+    // Namensbanner
+    const slide=Math.min(k*6,1);
+    const by=52+(1-slide)*-26;
+    c.save();c.globalAlpha=inOut;
+    c.fillStyle="rgba(8,6,14,.78)";
+    c.fillRect(0,by-15,W,34);
+    c.fillStyle=col;
+    c.fillRect(0,by-15,W,1.5);c.fillRect(0,by+17.5,W,1.5);
+    c.textAlign="center";
+    c.font="700 8px 'Courier New',monospace";
+    c.fillStyle=col;
+    c.fillText(I.boss?"W E L T E N B O S S":"M I N I B O S S",W/2,by-4);
+    c.font="700 15px 'Courier New',monospace";
+    c.fillStyle="#000";c.fillText(I.name,W/2+1,by+13);
+    c.fillStyle="#fff8fb";c.fillText(I.name,W/2,by+12);
+    c.textAlign="left";c.restore();
   }
   drawHud(c){
     c.font="8px 'Courier New',monospace";
@@ -3491,15 +3663,15 @@ const UI={
       }
       this._lastShards=run;
     }
-    const ts=$("tabSkills");
-    ts.textContent="Fähigkeiten"+(h.skillPts>0?" \u00B7 "+h.skillPts:"");
-    ts.classList.toggle("alert",h.skillPts>0);
-    const th=document.querySelector('#tabs button[data-tab="hero"]');
-    th.textContent="Held"+(h.attrPts>0?" \u00B7 "+h.attrPts:"");
-    th.classList.toggle("alert",h.attrPts>0);
-    const ti=$("tabInv"),nw=h.bag.filter(i=>i.isNew).length;
-    ti.textContent="Inventar"+(nw?" \u00B7 "+nw:"");
-    ti.classList.toggle("alert",nw>0);
+    const badge=(id,n)=>{
+      const b=$(id);if(!b)return;
+      const el=b.querySelector(".badge");
+      if(el){el.textContent=n;el.hidden=!n;}
+      b.classList.toggle("alert",n>0);
+    };
+    badge("tab_hero",h.attrPts>0?h.attrPts:0);
+    badge("tab_inv",h.bag.filter(i=>i.isNew).length);
+    badge("tab_skills",h.skillPts>0?h.skillPts:0);
   },
   renderAll(){
     if(!G.hero)return;
@@ -4440,14 +4612,9 @@ const UI={
       '<div class="audiorow"><span>Musiklautstärke</span>'+
       '<input type="range" id="musicVol" min="0" max="100" value="'+Math.round(MUSIC.vol*100)+'">'+
       '<b id="musicVolLb">'+Math.round(MUSIC.vol*100)+'%</b></div>'+
-      '<div class="hint">Sechs eigens komponierte, lizenzfreie Stücke. Vier richten sich nach der '+
-      'Umgebung; Kampfmusik erklingt nur bei Minibossen (Klinge und Stahl) und Weltenbossen '+
-      '(Abrechnung). Gewöhnliche Gegner lassen die Musik unangetastet.<br>Aktuell: <b>'+
-      (TRACKS[MUSIC.current]?TRACKS[MUSIC.current].n:"\u2014")+'</b>'+
-      ' \u00B7 Quelle: '+(MUSIC.mode()==="datei"?"Aufnahme aus <code>music/</code>":
-        "eingebauter Synthesizer (keine Datei gefunden)")+
-      '<br>Die Stücke liegen zusätzlich als MIDI im Ordner <code>music/</code> und lassen sich '+
-      'in jedem Notensatz- oder Musikprogramm bearbeiten oder ersetzen.</div>'+
+      '<div class="audiorow"><span>Titel</span>'+
+      '<b style="text-align:left;min-width:0;color:var(--acc2)">'+
+      (TRACKS[MUSIC.current]?TRACKS[MUSIC.current].n:"\u2014")+'</b></div>'+
       '<div class="hint">Der Fortschritt wird nach jedem Kampf automatisch gesichert.</div>'+
       '<div class="h3">Statistik dieses Runs</div>'+
       row("Getötete Gegner",h.kills)+row("Besiegte Bosse",h.bossKills)+
@@ -4886,6 +5053,7 @@ UI.init();
   UI.showIntro(!!run);
   setInterval(()=>{if(G.hero&&G.state!=="dead"&&G.state!=="idle")G.save();},20000);
 })();
+buildTabs();
 checkFontAwesome();
 setTimeout(checkFontAwesome,1500);      // Stylesheet kann später eintreffen
 MUSIC.preload();
