@@ -597,11 +597,51 @@ const TRACKS={
     mid: "G3 . G3 . F3 . F3 .  G3 . G3 . E3 . D3 .",
     lead:"C5 . D5 . D#5 . F5 .  G5 F5 D#5 D5 . . C5 ."}
 };
+const MUSIC_DIR="music/";
 class MusicEngine{
   constructor(){
     this.ctx=null;this.on=true;this.vol=.5;
     this.master=null;this.current=null;this.nextT=0;this.timer=null;this.gen=0;
-    this.chan=[];   // aktive Gain-Knoten der laufenden Kanäle, für sauberes Überblenden
+    this.files={};       // Schlüssel -> HTMLAudioElement, sobald geladen
+    this.state={};       // Schlüssel -> "laden" | "bereit" | "fehlt"
+    this.playing=null;   // gerade laufendes Element
+    this.fade=null;
+  }
+  /** Lädt die gerenderten Stücke aus dem music-Ordner vor */
+  preload(){
+    for(const k in TRACKS){
+      if(this.state[k])continue;
+      this.state[k]="laden";
+      const a=new Audio();
+      a.preload="auto";a.loop=true;a.volume=0;
+      a.addEventListener("canplaythrough",()=>{
+        this.state[k]="bereit";this.files[k]=a;
+        if(this.current===k&&this.on)this.play(k,true);
+      },{once:true});
+      a.addEventListener("error",()=>{this.state[k]="fehlt";},{once:true});
+      a.src=MUSIC_DIR+k+".ogg";
+      try{a.load();}catch(e){this.state[k]="fehlt";}
+    }
+  }
+  /** Weiches Überblenden zwischen zwei Dateien */
+  crossfade(next){
+    const prev=this.playing;
+    if(prev===next)return;
+    this.playing=next;
+    if(next){next.currentTime=0;next.volume=0;const pr=next.play();if(pr&&pr.catch)pr.catch(()=>{});}
+    if(this.fade)clearInterval(this.fade);
+    const target=this.on?this.vol:0;
+    let t=0;
+    this.fade=setInterval(()=>{
+      t+=.05;
+      const k=clamp(t/.9,0,1);
+      if(next)next.volume=target*k;
+      if(prev)prev.volume=target*(1-k);
+      if(k>=1){
+        clearInterval(this.fade);this.fade=null;
+        if(prev){prev.pause();prev.currentTime=0;}
+      }
+    },50);
   }
   init(){
     if(!this.ctx){
@@ -615,20 +655,37 @@ class MusicEngine{
   }
   setVolume(v){
     this.vol=clamp(v,0,1);
-    if(this.master)this.master.gain.setTargetAtTime(this.on?this.vol:0,this.ctx.currentTime,.15);
+    if(this.master&&this.ctx)this.master.gain.setTargetAtTime(this.on?this.vol:0,this.ctx.currentTime,.15);
+    if(this.playing&&!this.fade)this.playing.volume=this.on?this.vol:0;
   }
   setOn(on){
     this.on=on;
-    if(this.master)this.master.gain.setTargetAtTime(on?this.vol:0,this.ctx.currentTime,.15);
-    if(on&&this.current)this.play(this.current,true);
+    if(this.master&&this.ctx)this.master.gain.setTargetAtTime(on?this.vol:0,this.ctx.currentTime,.15);
+    if(this.playing&&!this.fade)this.playing.volume=on?this.vol:0;
+    if(!on){if(this.playing)this.playing.pause();this.stopSynth();}
+    else if(this.current)this.play(this.current,true);
+  }
+  /** Läuft die Wiedergabe über die gerenderten Dateien oder über den Synthesizer? */
+  mode(){
+    const k=this.current;
+    return (k&&this.state[k]==="bereit")?"datei":"synth";
   }
   /** Wechselt sanft zum angegebenen Stück; ruft man denselben Schlüssel erneut auf, passiert nichts */
   play(key,force){
     if(!TRACKS[key])return;
     if(this.current===key&&!force)return;
     this.current=key;
-    if(!this.on||!this.ctx)return;
-    this.init();
+    if(!this.on)return;
+    // Bevorzugt die gerenderte Aufnahme; nur wenn sie fehlt, spielt der Synthesizer
+    if(this.state[key]==="bereit"){
+      this.stopSynth();
+      this.crossfade(this.files[key]);
+      return;
+    }
+    if(this.state[key]==="laden")return;      // sobald sie da ist, startet sie von selbst
+    if(this.playing){this.playing.pause();this.playing=null;}
+    if(!this.ctx)this.init();
+    if(!this.ctx)return;
     this.gen++;const myGen=this.gen;
     if(this.timer){clearTimeout(this.timer);this.timer=null;}
     this.nextT=this.ctx.currentTime+.12;
@@ -660,9 +717,14 @@ class MusicEngine{
       }
     }
   }
-  stop(){
-    this.gen++;this.current=null;
+  stopSynth(){
+    this.gen++;
     if(this.timer){clearTimeout(this.timer);this.timer=null;}
+  }
+  stop(){
+    this.stopSynth();this.current=null;
+    if(this.fade){clearInterval(this.fade);this.fade=null;}
+    if(this.playing){this.playing.pause();this.playing.currentTime=0;this.playing=null;}
   }
 }
 const MUSIC=new MusicEngine();
@@ -1964,7 +2026,7 @@ class Game{
           {clear:"Der Himmel klart auf.",rain:"Regen zieht auf.",snow:"Schnee beginnt zu fallen.",
            fog:"Dichter Nebel legt sich über das Land."}[nw],"sys");}
     }
-    if(this.blend<1){this.blend=Math.min(1,this.blend+dt/3.2);   // Biom-Überblendung
+    if(this.blend<1){this.blend=Math.min(1,this.blend+dt/12.8);  // Biom-Überblendung, bewusst gemächlich
       if(this.blend>=1)this.prevBiome=null;}
     this.parts.update(dt);this.fct.update(dt);
     if(this.shake>0){this.shake-=dt;if(this.shake<0)this.shake=0;}
@@ -4370,9 +4432,13 @@ const UI={
       '<div class="audiorow"><span>Musiklautstärke</span>'+
       '<input type="range" id="musicVol" min="0" max="100" value="'+Math.round(MUSIC.vol*100)+'">'+
       '<b id="musicVolLb">'+Math.round(MUSIC.vol*100)+'%</b></div>'+
-      '<div class="hint">Sechs eigens komponierte, lizenzfreie Hintergrundstücke wechseln automatisch '+
-      'zwischen Erkundung, Dorf, Gemäuer, Höllenschlund, Kampf und Bosskampf. Aktuell: '+
-      (TRACKS[MUSIC.current]?TRACKS[MUSIC.current].n:"\u2014")+'</div>'+
+      '<div class="hint">Sechs eigens komponierte, lizenzfreie Stücke wechseln automatisch zwischen '+
+      'Erkundung, Dorf, Gemäuer, Höllenschlund, Kampf und Bosskampf.<br>Aktuell: <b>'+
+      (TRACKS[MUSIC.current]?TRACKS[MUSIC.current].n:"\u2014")+'</b>'+
+      ' \u00B7 Quelle: '+(MUSIC.mode()==="datei"?"Aufnahme aus <code>music/</code>":
+        "eingebauter Synthesizer (keine Datei gefunden)")+
+      '<br>Die Stücke liegen zusätzlich als MIDI im Ordner <code>music/</code> und lassen sich '+
+      'in jedem Notensatz- oder Musikprogramm bearbeiten oder ersetzen.</div>'+
       '<div class="hint">Der Fortschritt wird nach jedem Kampf automatisch gesichert.</div>'+
       '<div class="h3">Statistik dieses Runs</div>'+
       row("Getötete Gegner",h.kills)+row("Besiegte Bosse",h.bossKills)+
@@ -4813,6 +4879,7 @@ UI.init();
 })();
 checkFontAwesome();
 setTimeout(checkFontAwesome,1500);      // Stylesheet kann später eintreffen
+MUSIC.preload();
 document.addEventListener("pointerdown",()=>{SFX.init();MUSIC.init();updateMusic();},{once:true});
 </script>
 </body>
