@@ -927,15 +927,25 @@ function buildHeroSprites(){          // wird beim Start aufgerufen, sobald die 
    -------------------------------------------------------------------------- */
 const ASSET_DIR="assets/";
 const ASSET_HUE=210;                  // Farbton, in dem die mitgelieferten PNGs vorliegen
-/* Wie kräftig Gegnervarianten umgefärbt werden. Der Kompositionsmodus "color"
-   übernimmt Farbton und Sättigung der Füllung und behält die Helligkeit der
-   Zeichnung. Eine geringe Sättigung verschiebt damit den Farbbereich, ohne die
-   Figur flächig zu übermalen — Schattierung und Zeichnung bleiben sichtbar.
-   Eine Deckkraft unter eins wäre hier falsch: das Mischen im RGB-Raum zieht den
-   Farbton zurück zum Blau der Vorlage (bei 0,72 bis zu 35° Abweichung). */
-const TINT_SAT=34;      // Sättigung der Einfärbung in Prozent (Vorlage: 50 %)
-const TINT_LIGHT=52;    // Helligkeit der Einfärbung (wirkt sich kaum aus)
-const TINT_ALPHA=1;     // volle Deckkraft hält den Farbton exakt
+/* Gegnervarianten entstehen durch eine Drehung des Farbtons, nicht durch
+   Übermalen: jede Farbe der Zeichnung wandert um denselben Winkel weiter.
+   Dadurch bleiben die Farbbeziehungen innerhalb der Figur erhalten — glühende
+   Augen behalten ihren Kontrast zum Körper, Licht- und Schattenpartien ihre
+   eigenen Töne. Ein flächiger Farbauftrag würde all das auf einen Ton ziehen. */
+const TINT_SATURATE=.88;  // leichte Rücknahme der Sättigung bei der Drehung
+/* Rückfallebene für Browser ohne Canvas-Filter (Safari vor 16.4): dort wird
+   über den Kompositionsmodus eingefärbt, was Farbtöne einebnet, aber immerhin
+   unterscheidbare Varianten liefert. */
+const TINT_SAT=34;
+const TINT_LIGHT=52;
+/** Beherrscht dieser Browser Canvas-Filter? Sonst greift die Rückfallebene. */
+const CAN_FILTER=(function(){
+  try{
+    const c=document.createElement("canvas").getContext("2d");
+    c.filter="hue-rotate(90deg)";
+    return c.filter!=="none"&&c.filter!=="";
+  }catch(e){return false;}
+})();
 const ASSETS={};                      // id -> Image | false (nicht vorhanden)
 /* Symbole für Waffen, Rüstung, Edelsteine, Runen und Verbrauchsgüter */
 const ITEM_ART_IDS=["weapon_sword","weapon_dagger","weapon_axe","weapon_staff","weapon_bow",
@@ -1063,7 +1073,7 @@ function loadAssets(){
    danach nur noch als Bild kopiert — sonst kostet die vierfache Pixelzahl zu viel. */
 const SPR_CACHE={};let SPR_KEYS=0;
 function spriteBitmap(sp,pal,flash){
-  const key=(sp.id||"?")+"|"+(sp._tint||"-")+"|"+(flash||pal[2]+pal[4]+pal[6]);
+  const key=(sp.id||"?")+"|"+(sp._rot||0)+"|"+(flash||pal[2]+pal[4]+pal[6]);
   let cv=SPR_CACHE[key];
   if(cv)return cv;
   if(SPR_KEYS>240){for(const k in SPR_CACHE)delete SPR_CACHE[k];SPR_KEYS=0;}
@@ -1072,21 +1082,22 @@ function spriteBitmap(sp,pal,flash){
   const x=cv.getContext("2d");
   const art=ASSETS[sp.id];
   if(art){
-    x.drawImage(art,0,0,sp.w,sp.h);
-    if(sp._tint){
-      /* Farbvariante der Gegnerart: "color" übernimmt Farbton und Sättigung
-         der Füllung und behält die Helligkeit der Zeichnung — dadurch bleibt
-         die Schattierung erhalten. Anschließend wird die Transparenz der
-         Vorlage wieder aufgeprägt, sonst würde die Füllung den ganzen
-         Rahmen einfärben. */
+    if(sp._rot&&CAN_FILTER){
+      // Farbtondrehung: alle Farben der Zeichnung wandern um denselben Winkel
+      x.filter="hue-rotate("+sp._rot+"deg) saturate("+TINT_SATURATE+")";
+      x.drawImage(art,0,0,sp.w,sp.h);
+      x.filter="none";
+    }else if(sp._rot){
+      // Ohne Filterunterstützung: Farbauftrag über den Kompositionsmodus
+      x.drawImage(art,0,0,sp.w,sp.h);
       x.globalCompositeOperation="color";
-      x.globalAlpha=TINT_ALPHA;
       x.fillStyle=sp._tint;
       x.fillRect(0,0,sp.w,sp.h);
-      x.globalAlpha=1;
       x.globalCompositeOperation="destination-in";
       x.drawImage(art,0,0,sp.w,sp.h);
       x.globalCompositeOperation="source-over";
+    }else{
+      x.drawImage(art,0,0,sp.w,sp.h);
     }
     if(flash){x.globalCompositeOperation="source-atop";x.fillStyle=flash;x.fillRect(0,0,sp.w,sp.h);
       x.globalCompositeOperation="source-over";}
@@ -1107,8 +1118,12 @@ function spriteBitmap(sp,pal,flash){
 }
 /** `scale` = logische Pixel je URSPRUNGS-Pixel; die Matrix ist doppelt so fein */
 function drawSprite(ctx,sp,cx,groundY,scale,pal,flip,flash,alpha,hue){
-  // Farbton der Gegnerart als Einfärbung — ohne Farbton bleibt die Zeichnung, wie sie ist
-  sp._tint=(hue===undefined||hue===null)?null:hsl(hue,TINT_SAT,TINT_LIGHT);
+  // Wie weit der Farbkreis gedreht wird — 0 lässt die Zeichnung unverändert
+  if(hue===undefined||hue===null){sp._rot=0;sp._tint=null;}
+  else{
+    sp._rot=Math.round(((hue-ASSET_HUE)%360+540)%360-180);
+    sp._tint=hsl(hue,TINT_SAT,TINT_LIGHT);      // nur für die Rückfallebene
+  }
   const u=scale/(sp.f||1);
   const w=sp.w*u,hh=sp.h*u;
   const x0=Math.round((cx-w/2)*2)/2,y0=Math.round((groundY-sp.base*u)*2)/2;
