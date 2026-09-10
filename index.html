@@ -609,6 +609,10 @@ const TRACKS={
     lead:"C5 . D5 . D#5 . F5 .  G5 F5 D#5 D5 . . C5 ."}
 };
 const MUSIC_DIR="music/";
+/* Endungen in der Reihenfolge, in der sie probiert werden. Scheitert eine,
+   nimmt der Lader die nächste; erst wenn keine trägt, springt der eingebaute
+   Synthesizer ein. So laufen sowohl MP3- als auch OGG-Sammlungen. */
+const MUSIC_EXT=[".mp3",".ogg",".m4a"];
 class MusicEngine{
   constructor(){
     this.ctx=null;this.on=true;this.vol=.5;
@@ -625,13 +629,18 @@ class MusicEngine{
       this.state[k]="laden";
       const a=new Audio();
       a.preload="auto";a.loop=true;a.volume=0;
+      let ext=0;
+      const tryNext=()=>{
+        if(ext>=MUSIC_EXT.length){this.state[k]="fehlt";return;}
+        a.src=MUSIC_DIR+k+MUSIC_EXT[ext++];
+        try{a.load();}catch(e){tryNext();}
+      };
       a.addEventListener("canplaythrough",()=>{
         this.state[k]="bereit";this.files[k]=a;
         if(this.current===k&&this.on)this.play(k,true);
       },{once:true});
-      a.addEventListener("error",()=>{this.state[k]="fehlt";},{once:true});
-      a.src=MUSIC_DIR+k+".ogg";
-      try{a.load();}catch(e){this.state[k]="fehlt";}
+      a.addEventListener("error",()=>{if(this.state[k]!=="bereit")tryNext();});
+      tryNext();
     }
   }
   /** Weiches Überblenden zwischen zwei Dateien */
@@ -918,6 +927,15 @@ function buildHeroSprites(){          // wird beim Start aufgerufen, sobald die 
    -------------------------------------------------------------------------- */
 const ASSET_DIR="assets/";
 const ASSET_HUE=210;                  // Farbton, in dem die mitgelieferten PNGs vorliegen
+/* Wie kräftig Gegnervarianten umgefärbt werden. Der Kompositionsmodus "color"
+   übernimmt Farbton und Sättigung der Füllung und behält die Helligkeit der
+   Zeichnung. Eine geringe Sättigung verschiebt damit den Farbbereich, ohne die
+   Figur flächig zu übermalen — Schattierung und Zeichnung bleiben sichtbar.
+   Eine Deckkraft unter eins wäre hier falsch: das Mischen im RGB-Raum zieht den
+   Farbton zurück zum Blau der Vorlage (bei 0,72 bis zu 35° Abweichung). */
+const TINT_SAT=34;      // Sättigung der Einfärbung in Prozent (Vorlage: 50 %)
+const TINT_LIGHT=52;    // Helligkeit der Einfärbung (wirkt sich kaum aus)
+const TINT_ALPHA=1;     // volle Deckkraft hält den Farbton exakt
 const ASSETS={};                      // id -> Image | false (nicht vorhanden)
 /* Symbole für Waffen, Rüstung, Edelsteine, Runen und Verbrauchsgüter */
 const ITEM_ART_IDS=["weapon_sword","weapon_dagger","weapon_axe","weapon_staff","weapon_bow",
@@ -1062,8 +1080,10 @@ function spriteBitmap(sp,pal,flash){
          Vorlage wieder aufgeprägt, sonst würde die Füllung den ganzen
          Rahmen einfärben. */
       x.globalCompositeOperation="color";
+      x.globalAlpha=TINT_ALPHA;
       x.fillStyle=sp._tint;
       x.fillRect(0,0,sp.w,sp.h);
+      x.globalAlpha=1;
       x.globalCompositeOperation="destination-in";
       x.drawImage(art,0,0,sp.w,sp.h);
       x.globalCompositeOperation="source-over";
@@ -1088,7 +1108,7 @@ function spriteBitmap(sp,pal,flash){
 /** `scale` = logische Pixel je URSPRUNGS-Pixel; die Matrix ist doppelt so fein */
 function drawSprite(ctx,sp,cx,groundY,scale,pal,flip,flash,alpha,hue){
   // Farbton der Gegnerart als Einfärbung — ohne Farbton bleibt die Zeichnung, wie sie ist
-  sp._tint=(hue===undefined||hue===null)?null:hsl(hue,62,48);
+  sp._tint=(hue===undefined||hue===null)?null:hsl(hue,TINT_SAT,TINT_LIGHT);
   const u=scale/(sp.f||1);
   const w=sp.w*u,hh=sp.h*u;
   const x0=Math.round((cx-w/2)*2)/2,y0=Math.round((groundY-sp.base*u)*2)/2;
@@ -1866,7 +1886,7 @@ class Enemy extends Entity{
         this.xp=Math.round(this.xp*3.2);this.gold=Math.round(this.gold*3.4);
       }
     }
-    this.hp=this.maxHp;this.pal=palette(this.hue,this.boss?62:55);
+    this.hp=this.maxHp;this.pal=palette(this.hue,this.boss?48:40);
     this.sp=SPRITES[this.model];
   }
 }
@@ -3224,6 +3244,19 @@ class Game{
     c.globalAlpha=.28;c.fillStyle="#000";
     c.beginPath();c.ellipse(x,GROUND+1,15*look.sc*(look.wide||1),4,0,0,7);c.fill();c.globalAlpha=1;
     const gy=GROUND-bob-(this.rideT>0?16:0);
+    // Umhang zuerst: er gehört hinter den Körper, sonst verdeckt er Rumpf und Nebenhand
+    if(h.equip.chest&&h.equip.chest.rar>=1){
+      const cp=palette((hue+180)%360,52);
+      const sway=Math.sin(h.anim*.9)*2.2+(this.state==="walk"?2.6:0);
+      c.fillStyle=cp[4];
+      c.beginPath();
+      c.moveTo(x-3,gy-30);
+      c.quadraticCurveTo(x-10-sway,gy-18,x-7-sway*1.5,gy-2);
+      c.lineTo(x+1,gy-4);c.lineTo(x+1,gy-30);
+      c.closePath();c.fill();
+      c.fillStyle=cp[2];
+      c.fillRect(x-4,gy-31,6,3);
+    }
     if(look.wide){c.save();c.translate(x,0);c.scale(look.wide,1);c.translate(-x,0);}
     drawSprite(c,sp,x,gy,sc,pal,false,h.flash>0?"#ffffff":null,1,hasArt?ASSET_HUE:hue);
     if(look.wide)c.restore();
@@ -3234,19 +3267,6 @@ class Game{
     }
     // Merkmale nur zeichnen, wenn sie nicht schon in der Grafik stecken
     if(!hasArt)drawRaceFeatures(c,look,x,gy-sp.base*(sc/sp.f)+7*look.sc,look.sc,false);
-    // Umhang: weht beim Laufen nach hinten
-    if(h.equip.chest&&h.equip.chest.rar>=1){
-      const cp=palette((hue+180)%360,52);
-      const sway=Math.sin(h.anim*.9)*2.2+(this.state==="walk"?2.6:0);
-      c.fillStyle=cp[4];
-      c.beginPath();
-      c.moveTo(x-5,gy-30);
-      c.quadraticCurveTo(x-11-sway,gy-18,x-8-sway*1.5,gy-2);
-      c.lineTo(x-1,gy-4);c.lineTo(x-1,gy-30);
-      c.closePath();c.fill();
-      c.fillStyle=cp[2];
-      c.fillRect(x-6,gy-31,7,3);
-    }
     // Kopfbedeckung wird bewusst nicht gezeichnet: die Klassen-Sprites tragen
     // bereits Helm, Kapuze oder Hut, ein zweiter darüber sah falsch aus.
     // Waffe (Farbe/Form folgt dem ausgerüsteten Item — Paperdoll-Update)
@@ -3259,7 +3279,10 @@ class Game{
     if(w){
       const wp=palette(w.hue,RARITY[w.rar].hex==="#b6b2c9"?18:65);
       const glow=RARITY[w.rar].hex;
-      if(w.rar>=2){c.shadowBlur=7;c.shadowColor=glow;}
+      // Der Schein wird hinter die Waffe gelegt statt als Canvas-Schatten gesetzt:
+      // ein gesetzter shadowBlur wirkt auf jeden folgenden Zeichenbefehl und hat
+      // farbige Ausrüstung unsichtbar gemacht.
+      if(w.rar>=1)this.rarityGlow(c,0,-9,13+w.rar*3,glow,.16+w.rar*.06);
       const wart=ASSETS[artIdFor(w)];
       if(wart){
         // Eigene Waffengrafik: aufrecht, Griff am unteren Ende
@@ -3290,7 +3313,6 @@ class Game{
         c.fillStyle=wp[1];c.fillRect(-1.2,2,2.4,5);             // Griff
         c.fillStyle=glow;c.beginPath();c.arc(0,8,1.8,0,7);c.fill();  // Knauf
       }
-      c.shadowBlur=0;
     }else{
       c.fillStyle="#9d95c0";c.fillRect(-1,-9,2,9);
     }
@@ -3299,7 +3321,8 @@ class Game{
     if(h.equip.offhand){
       const op=palette(h.equip.offhand.hue,60);
       c.save();c.translate(x-13,wy+6);
-      if(RARITY[h.equip.offhand.rar].hex!=="#b6b2c9"){c.shadowBlur=6;c.shadowColor=RARITY[h.equip.offhand.rar].hex;}
+      if(h.equip.offhand.rar>=1)
+        this.rarityGlow(c,0,0,13+h.equip.offhand.rar*2,RARITY[h.equip.offhand.rar].hex,.16+h.equip.offhand.rar*.06);
       // Nebenhand: eigene Grafik, sonst der gezeichnete Schild
       const oart=ASSETS[artIdFor(h.equip.offhand)];
       if(oart){
@@ -3319,6 +3342,15 @@ class Game{
     if(h.status.poison>0){
       if(Math.random()<.25)this.parts.puff(x+rnd(-6,6),gy-30,"#7cd66a");
     }
+  }
+  /** Weicher Schein in der Farbe der Seltenheit — als Fläche, nicht als Schatten */
+  rarityGlow(c,cx,cy,r,col,alpha){
+    const g=c.createRadialGradient(cx,cy,0,cx,cy,r);
+    g.addColorStop(0,hexA(col,alpha));
+    g.addColorStop(.55,hexA(col,alpha*.5));
+    g.addColorStop(1,hexA(col,0));
+    c.fillStyle=g;
+    c.beginPath();c.arc(cx,cy,r,0,7);c.fill();
   }
   /** Sichtbare Aura, solange Segen wirken: Lichtkreis, kreisende Funken, Aufwind */
   drawBoonAura(c,x,gy,h){
