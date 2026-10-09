@@ -242,10 +242,34 @@ body:not(.nofa) svg.tabico{display:none}
   .log.full{max-height:none}
   .ptitle .logtoggle{display:inline}
 }
+/* Splash: 1:1-Bild deckt Breite und Höhe ab (object-fit: cover). Auf schmalen
+   Hochkant-Bildschirmen wird links/rechts beschnitten, auf breiten oben/unten —
+   Wichtiges gehört deshalb in die Bildmitte. */
+.splash{position:fixed;inset:0;z-index:1200;display:none;background:#06050c;opacity:0;
+  transition:opacity .45s ease;cursor:pointer;overflow:hidden;touch-action:none}
+.splash.on{display:block}
+.splash.vis{opacity:1}
+.splash img{position:absolute;inset:0;width:100%;height:100%;height:100dvh;object-fit:cover;
+  object-position:50% 50%;image-rendering:pixelated;transform:scale(1.04);transition:transform 3.2s ease-out}
+.splash.vis img{transform:scale(1)}
+.splash .splashfb{display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;
+  font-size:clamp(28px,8vw,64px);font-weight:700;letter-spacing:4px;color:#f3ecff;
+  text-shadow:0 0 18px rgba(189,147,249,.8),0 4px 0 #4a2f7a;
+  background:radial-gradient(circle at 50% 45%,#2a1f46,#06050c 70%)}
+.splash .splashfb span{font-size:.35em;color:var(--acc);letter-spacing:.6em;margin-top:.4em}
+.splash.noimg .splashfb{display:flex}
+.splash.noimg img{display:none}
+.splash .splashhint{position:absolute;z-index:1;isolation:isolate;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom));
+  text-align:center;color:rgba(232,229,246,.8);font-size:12px;letter-spacing:2px;pointer-events:none;
+  animation:splashhint 1.6s ease-in-out infinite}
+.splash .splashhint::before{content:"";position:absolute;left:50%;top:50%;width:250px;height:28px;
+  transform:translate(-50%,-50%);border-radius:14px;background:rgba(6,5,12,.6);z-index:-1}
+@keyframes splashhint{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.splash img{transition:none;transform:none}.splash .splashhint{animation:none}}
 /* Fenster und Overlays scrollen für sich, ohne die Seite dahinter mitzuziehen */
 .sheet,.card{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .card{max-height:calc(100dvh - 32px)}
-body.modal{overflow:hidden}
+body.modal,body.splashing{overflow:hidden}
 .path{touch-action:pan-x pan-y}
 .tab{display:none;opacity:0;transform:translateY(6px);transition:opacity .22s,transform .22s}
 .tab.active{display:block}
@@ -626,6 +650,12 @@ input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px 
 </div>
 
 <div class="sheetwrap" id="sheetWrap"><div class="sheet" id="sheet"></div></div>
+<!-- Splash: quadratisches Bild aus assets/splash.png, füllt den ganzen Bildschirm -->
+<div class="splash" id="splash" role="dialog" aria-label="Auto-Dungeon: Legacy">
+  <img id="splashImg" src="assets/splash.png" alt="" onerror="this.parentNode.classList.add('noimg')">
+  <div class="splashfb">AUTO-DUNGEON<span>L E G A C Y</span></div>
+  <div class="splashhint">Antippen zum Fortfahren</div>
+</div>
 <div id="tooltip"></div>
 <div id="toast" class="toast"></div>
 <div class="overlay" id="overlay"><div class="card" id="overlayCard"></div></div>
@@ -4963,6 +4993,34 @@ const UI={
       const c=$("chipPot");c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop");
     };
   },
+  /** Splash zeigen; Antippen, Klick oder Taste überspringt, sonst nach `ms` weiter */
+  showSplash(done,ms){
+    const sp=$("splash");
+    if(this._splashDone)this.closeSplash(true);
+    let closed=false;
+    const finish=()=>{
+      if(closed)return;closed=true;
+      clearTimeout(this._splashTimer);
+      window.removeEventListener("keydown",onKey,true);
+      sp.classList.remove("vis");
+      setTimeout(()=>{sp.classList.remove("on");document.body.classList.remove("splashing");
+        if(done)done();},450);
+    };
+    const onKey=e=>{e.preventDefault();e.stopPropagation();finish();};
+    this._splashDone=finish;
+    sp.onclick=finish;
+    window.addEventListener("keydown",onKey,true);
+    document.body.classList.add("splashing");
+    sp.classList.add("on");
+    requestAnimationFrame(()=>requestAnimationFrame(()=>sp.classList.add("vis")));
+    this._splashTimer=setTimeout(finish,ms||3200);
+  },
+  /** Splash sofort schließen (instant=true: ohne Ausblenden, z. B. für Tests) */
+  closeSplash(instant){
+    const f=this._splashDone;this._splashDone=null;
+    if(f)f();
+    if(instant){const sp=$("splash");sp.classList.remove("vis","on");document.body.classList.remove("splashing");}
+  },
   /** Sperrt das Scrollen der Seite, solange ein Fenster oder Overlay offen ist */
   watchModals(){
     const upd=()=>document.body.classList.toggle("modal",
@@ -6445,8 +6503,11 @@ const UI={
       $("cStart").onclick=()=>{
         const n=($("cName").value||"").trim()||this.randomName();
         SFX.init();MUSIC.init();o.classList.remove("on");
-        G.startRun(n,race,cls);
-        if(G.hero){G.hero.tint=tint;G.hero.look=lookIdx;}
+        // Vor jedem neuen Run: Splash, danach beginnt der Lauf
+        this.showSplash(()=>{
+          G.startRun(n,race,cls);
+          if(G.hero){G.hero.tint=tint;G.hero.look=lookIdx;}
+        },2600);
       };
     };
     draw();o.classList.add("on");
@@ -6743,6 +6804,7 @@ UI.init();
   await G.loadMeta();
   const run=await Store.get("ad_run");
   UI.showIntro(!!run);
+  UI.showSplash(null,3200);                // beim Start des Spiels über dem Startbildschirm
   setInterval(()=>{if(G.hero&&G.state!=="dead"&&G.state!=="idle")G.save();},20000);
 })();
 buildTabs();
