@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Auto-Dungeon: Legacy</title>
 <link rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -24,6 +24,11 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%}
+/* Touch: Doppeltippen zoomt nicht mehr ins Bild, Antippen blitzt nicht grau auf.
+   Pinch-Zoom bleibt erlaubt. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+body,button,.cell,.gem,.node,.tabs,canvas,.ultbtn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button,.cell,.gem,.node,.tabs,.ultbtn,.bar,.chip{-webkit-user-select:none;user-select:none}
 body{
   margin:0;background:
     radial-gradient(1200px 600px at 20% -10%,#241f3d 0%,transparent 60%),
@@ -160,6 +165,23 @@ body:not(.nofa) svg.tabico{display:none}
 .tabs button.alert:not(.active){color:var(--acc2);border-color:var(--acc2);box-shadow:0 0 10px rgba(139,233,253,.35)}
 .tabbody{position:relative;min-height:430px;max-height:min(72vh,660px);overflow-y:auto;
   overflow-x:hidden;padding:12px;min-width:0}
+/* Handy und schmale Fenster (eine Spalte): keine eigenen Scrollbereiche mehr in der
+   Seite — Tab-Inhalt und Protokoll fließen in die Seite, gescrollt wird nur noch sie.
+   Die Tab-Leiste bleibt oben angeheftet, damit man jederzeit wechseln kann. */
+@media (max-width:900px){
+  .tabbody{max-height:none;overflow:visible;min-height:0}
+  aside.panel>.tabs{position:sticky;top:0;z-index:20;background:#1e1b2e;border-radius:14px 14px 0 0;
+    box-shadow:0 6px 14px rgba(0,0,0,.35)}
+  .log{height:auto;max-height:136px;overflow:hidden}
+  .log.full{max-height:none}
+  .logtoggle{display:inline}
+}
+.logtoggle{display:none;float:right;color:var(--acc2);letter-spacing:0;text-transform:none}
+/* Fenster und Overlays scrollen für sich, ohne die Seite dahinter mitzuziehen */
+.sheet,.card{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.card{max-height:calc(100dvh - 32px)}
+body.modal{overflow:hidden}
+.path{touch-action:pan-x pan-y}
 .tab{display:none;opacity:0;transform:translateY(6px);transition:opacity .22s,transform .22s}
 .tab.active{display:block}
 .tab.shown{opacity:1;transform:none}
@@ -463,7 +485,7 @@ body:not(.nofa) svg.slotico{display:none}
 .choice b{display:block;margin-bottom:3px}
 .choice small{color:var(--muted);display:block;font-size:11px;line-height:1.4}
 input[type=text]{width:100%;background:#12101c;border:1px solid var(--line);border-radius:10px;
-  padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px}
+  padding:10px 12px;color:var(--text);font-family:inherit;font-size:16px}
 input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px rgba(189,147,249,.3)}
 .deathstat{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:14px 0}
 .deathstat div{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px;text-align:center}
@@ -506,7 +528,7 @@ input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px 
         <div class="bar xp small" id="xpWrap"><i id="barXp"></i><b id="txtXp">—</b></div>
       </div>
       <div class="panel" style="margin-top:12px">
-        <div class="ptitle">Kampfprotokoll</div>
+        <div class="ptitle" id="logTitle">Kampfprotokoll <span class="logtoggle" id="logToggle">aufklappen</span></div>
         <div class="log" id="log"></div>
       </div>
     </section>
@@ -3314,10 +3336,10 @@ class Game{
     }
     if(h.leech>0){const heal=Math.max(1,Math.round(Math.min(dmg*h.leech/100,h.maxHp*.025)));
       if(h.hp<h.maxHp){h.hp=Math.min(h.maxHp,h.hp+heal);this.fct.add(120,GROUND-46,"+"+heal,"heal");
-        // Lebensraub: rote Tropfen fließen vom Gegner zum Helden
-        const n=h.hasUniq("leech")?3:1;
-        for(let j=0;j<n;j++)this.spells.shot(ex+rnd(-4,4),ey+rnd(-4,4),{x:122,y:GROUND-40},
-          {col:"#ff4d6d",core:"#ffd0d8",r:1.4,spd:200+j*40,arc:8+j*6,trail:"blood"});}}
+        // Lebensraub: kurzes rotes Aufglimmen am Helden selbst. Bewusst kein Geschoss
+        // vom Gegner her — das sah aus wie ein gegnerischer Angriff.
+        if(Math.random()<(h.hasUniq("leech")?.6:.3))this.parts.add(122+rnd(-6,6),GROUND-30,h.hasUniq("leech")?5:3,
+          {dir:-Math.PI/2,spread:.6,spdMin:12,spdMax:34,lifeMin:.3,lifeMax:.6,col:pick(["#ff4d6d","#ffd0d8"]),size:1,g:-20,glow:1});}}
     if(extra&&!blocked){                   // Zweitschlag: Nachbild in Türkis
       this.spells.flare(ex-8,ey,"#8be9fd",16,.2);
       if(Math.random()<.5)this.fct.add(ex,ey-22,"Zweitschlag","block");
@@ -4655,7 +4677,22 @@ const UI={
     if(G.hero)this.renderAll();
   },
   sheetOpen(){return $("sheetWrap").classList.contains("on");},
+  /** Sperrt das Scrollen der Seite, solange ein Fenster oder Overlay offen ist */
+  watchModals(){
+    const upd=()=>document.body.classList.toggle("modal",
+      $("overlay").classList.contains("on")||$("sheetWrap").classList.contains("on"));
+    const mo=new MutationObserver(upd);
+    mo.observe($("overlay"),{attributes:true,attributeFilter:["class"]});
+    mo.observe($("sheetWrap"),{attributes:true,attributeFilter:["class"]});
+    upd();
+    // Protokoll auf dem Handy auf- und zuklappen statt darin zu scrollen
+    const t=$("logTitle"),lg=$("log");
+    t.style.cursor="pointer";
+    t.onclick=()=>{const on=lg.classList.toggle("full");$("logToggle").textContent=on?"zuklappen":"aufklappen";
+      if(!on)lg.scrollTop=lg.scrollHeight;};
+  },
   init(){
+    setTimeout(()=>this.watchModals(),0);
     $("tabs").addEventListener("click",e=>{
       const b=e.target.closest("button[data-tab]");if(!b)return;
       this.switchTab(b.dataset.tab);SFX.init();
@@ -4684,6 +4721,9 @@ const UI={
       else{t.classList.remove("active");t.classList.remove("shown");}
     });
     this.renderAll();
+    // Eine Spalte: war man weit unten, beginnt der neue Tab oben an der Leiste
+    const box=$("tabs").parentElement.getBoundingClientRect();
+    if(innerWidth<=900&&box.top<0)window.scrollTo(0,window.scrollY+box.top);
   },
   /* ---------- Log ---------- */
   clearLog(){$("log").innerHTML="";},
@@ -4695,7 +4735,7 @@ const UI={
     d.innerHTML='<span class="t">Z'+z+'</span>'+msg;
     el.appendChild(d);
     while(el.children.length>140)el.removeChild(el.firstChild);
-    el.scrollTop=el.scrollHeight;
+    if(!el.classList.contains("full"))el.scrollTop=el.scrollHeight;
   },
   toast(msg){
     const t=$("toast");t.textContent=msg;t.classList.add("on");
