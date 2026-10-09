@@ -148,6 +148,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc2);outl
   border:2px solid var(--uc,#bd93f9);background:#0e0c17;padding:0;overflow:hidden;color:#fff;
   box-shadow:0 4px 14px rgba(0,0,0,.6);display:none;align-items:center;justify-content:center}
 .ultbtn.on{display:flex}
+/* Schutz-Knopf links neben der Ultimate, etwas kleiner */
+.ultbtn.defbtn{right:80px;bottom:16px;width:48px;height:48px}
+.defbtn .uico{font-size:20px}
+.defbtn .ukey{right:10px}
+.defbtn.active{box-shadow:0 0 0 3px var(--uc),0 0 16px var(--uc);animation:none}
+@media (max-width:640px){.ultbtn.defbtn{right:64px;bottom:10px;width:42px;height:42px}.ultbtn.defbtn .uico{font-size:17px}}
 .ultbtn .ucd{position:absolute;inset:0;border-radius:50%;
   background:conic-gradient(var(--uc,#bd93f9) calc(var(--p,0)*1%),rgba(255,255,255,.04) 0);opacity:.55}
 .ultbtn .uico{position:relative;font-size:26px;line-height:1;text-shadow:0 0 8px var(--uc)}
@@ -170,6 +176,9 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc2);outl
 .ultcard .uhd small{color:var(--muted)}
 .ultcard .udesc{margin:8px 0 6px;font-size:12.5px}
 .ultcard .uline{font-size:12px;color:var(--acc2);padding:1px 0}
+.ultcard .upas{margin-top:7px;padding:6px 8px;border-radius:9px;background:rgba(255,255,255,.04);
+  border:1px dashed var(--line);font-size:12px;line-height:1.45}
+.ultcard .upas b{color:var(--uc)}
 .ultcard .unext{font-size:12px;color:var(--good);padding:1px 0}
 .ultcard .utier{display:flex;gap:5px;align-items:center;margin:8px 0 2px;font-size:11px;color:var(--muted)}
 .ultcard .utier i{width:18px;height:6px;border-radius:3px;background:#2c2840;display:inline-block}
@@ -573,6 +582,10 @@ input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px 
           <canvas id="game" width="840" height="560"></canvas>
           <div class="flicker"></div>
         </div>
+        <button class="ultbtn defbtn" id="defBtn" type="button" aria-label="Schutzfähigkeit auslösen (Taste F)">
+          <span class="ucd"></span><span class="uico" id="defIco"></span>
+          <span class="ukey">F</span><span class="utime" id="defTime"></span>
+        </button>
         <button class="ultbtn" id="ultBtn" type="button" aria-label="Ultimative Fähigkeit auslösen (Taste R)">
           <span class="ucd" id="ultCd"></span><span class="uico" id="ultIco"></span>
           <span class="ukey">R</span><span class="utime" id="ultTime"></span>
@@ -649,6 +662,16 @@ function hexA(hex,a){
 }
 /** Quadratischer Schwierigkeitsanteil, der erst ab Stufe `off` einsetzt */
 const QS=(lvl,off)=>{const v=Math.max(0,lvl-off);return v*v;};
+/* Schwierigkeit — zentral einstellbar. Gegner werden mit der Stufe zusätzlich
+   zäher und härter, weil Fertigkeitspunkte, Ultimate und Ahnen-Boni den Helden
+   sonst davonziehen lassen. Die ersten Stufen bleiben bewusst sanft. */
+const DIFF={hp:1.12,dmg:1.15,lvlHp:.022,lvlDmg:.018,from:4};
+function diffScale(level,kind){
+  const over=Math.max(0,level-DIFF.from);
+  return kind==="hp"?DIFF.hp*(1+over*DIFF.lvlHp):DIFF.dmg*(1+over*DIFF.lvlDmg);
+}
+/** Trankgürtel: so viele Tränke trägt ein Held höchstens */
+function potionCap(){return 5+((typeof G!=="undefined"&&G.meta&&G.meta.potion)||0);}
 
 /* Persistenter Speicher: nutzt die Artifact-Storage-API, fällt sonst auf RAM zurück */
 /* Speicher-Kette: zuerst der Browser-Cache (localStorage), sonst die Artifact-API,
@@ -1429,7 +1452,7 @@ class SpellFx{
     const mx=(x0+x1)/2,my=(y0+y1)/2,dx=x1-x0,dy=y1-y0,len=Math.hypot(dx,dy)||1;
     const nx=-dy/len,ny=dx/len;                 // Senkrechte zur Flugrichtung
     this.f.push({k:"orb",x0,y0,x1,y1,cx:mx+nx*o.bend+o.lean,cy:my+ny*o.bend,
-      t:-(o.delay||0),max:o.max||.6,r:o.r||2,onArrive:o.onArrive});
+      t:-(o.delay||0),max:o.max||.6,r:o.r||2,onArrive:o.onArrive,col:o.col,core:o.core});
   }
   quake(x1,x2,col,dur,onHit){this.f.push({k:"quake",x1,x2,x:x1,col,t:0,max:dur,onHit});}
   wave(x1,x2,y,col,dur,onHit){this.f.push({k:"wave",x1,x2,x:x1,y,col,t:0,max:dur,onHit});}
@@ -1566,16 +1589,16 @@ class SpellFx{
         // Fade-in am Gegner, Schrumpfen beim Eintauchen in den Helden
         const grow=Math.min(1,f.t/.08),fin=p>.9?1-(p-.9)/.1*.6:1,r=f.r*grow*fin;
         c.save();
-        // Schweif: drei Nachbilder etwas weiter zurück auf derselben Bahn
-        for(let j=3;j>=1;j--){
-          const q=at(ease(clamp((f.t-j*.022)/f.max,0,1)));
-          c.globalAlpha=.16*(4-j);c.fillStyle="#c1121f";
-          c.beginPath();c.arc(q[0],q[1],r*(1-j*.18),0,7);c.fill();
+        // Dezent: zwei schwache Nachbilder, kein Leuchthof, halbtransparent
+        const col=f.col||"#ff4d6d",core=f.core||"#ffd0d8";
+        for(let j=2;j>=1;j--){
+          const q=at(ease(clamp((f.t-j*.025)/f.max,0,1)));
+          c.globalAlpha=.08*(3-j);c.fillStyle=col;
+          c.beginPath();c.arc(q[0],q[1],r*(1-j*.2),0,7);c.fill();
         }
         const P=at(p);
-        c.globalAlpha=1;c.shadowBlur=7;c.shadowColor="#ff4d6d";
-        c.fillStyle="#ff4d6d";c.beginPath();c.arc(P[0],P[1],r+.8,0,7);c.fill();
-        c.shadowBlur=0;c.fillStyle="#ffd0d8";c.beginPath();c.arc(P[0]-.4,P[1]-.4,r*.45,0,7);c.fill();
+        c.globalAlpha=.7;c.fillStyle=col;c.beginPath();c.arc(P[0],P[1],r+.4,0,7);c.fill();
+        c.globalAlpha=.85;c.fillStyle=core;c.beginPath();c.arc(P[0],P[1],r*.4,0,7);c.fill();
         c.restore();
       }else if(f.k==="slash"){
         const k=f.t/f.max,r=(14+k*6)*f.big;
@@ -2093,6 +2116,26 @@ const ULTS={
            B:{n:"Heiliger Schild",col:"#ffd166",d:"Eine goldene Kuppel schluckt 10 s lang Schaden, die Heilung ist stärker. Als Legende heilt die Kuppel fortlaufend."}}}
 };
 function ultTier(r){return r>=10?4:r>=7?3:r>=4?2:1;}
+/* Passive Schutzfähigkeit je Klasse — gehört zur Ultimate und wächst mit ihrem Rang. */
+const ULT_PASSIVES={
+  warrior:{n:"Eiserner Wille",ico:"\u26E8",col:"#c9c4d8"},
+  mage:{n:"Arkane Barriere",ico:"\u25CE",col:"#bd93f9"},
+  rogue:{n:"Schattenhaut",ico:"\u263E",col:"#50fa7b"},
+  paladin:{n:"Göttlicher Schutz",ico:"\u2626",col:"#ffd166"}
+};
+/** Schutzfähigkeit: manuell ausgelöst (Knopf neben der Ultimate oder Taste F),
+    kurze Abklingzeit, wächst mit dem Rang der Ultimate. */
+function passiveStats(h,rankOverride){
+  const r=rankOverride||h.ult.rank;
+  if(h.cls==="warrior"){const red=25+r*2.5,dur=6,cd=Math.max(14,20-r*.6);
+    return {red,dur,cd,d:"Haut aus Eisen: "+red+" % weniger Schaden für "+dur+" s.",short:red+" %"};}
+  if(h.cls==="mage"){const pct=+(12+r*1.8).toFixed(1),dur=8,cd=Math.max(14,20-r*.6);
+    return {pct,dur,cd,d:"Barriere, die Schaden bis "+pct+" % deines Lebens schluckt, für "+dur+" s.",short:pct+" %"};}
+  if(h.cls==="rogue"){const n=2+Math.floor(r/3),dur=6,cd=Math.max(13,18-r*.5);
+    return {n,dur,cd,d:"Du weichst den nächsten "+n+" Angriffen aus (höchstens "+dur+" s).",short:n+" Angriffe"};}
+  const heal=+(8+r*1.5).toFixed(1),dur=5,cd=Math.max(18,26-r*.8);
+  return {heal,dur,cd,d:"Heilt sofort "+heal+" % und "+dur+" s lang kann dich kein Treffer töten.",short:heal+" %"};
+}
 /** Benötigte Heldenstufe für einen Rang */
 function ultReqLevel(r){return (r-1)*3+1;}
 /** Alle Zahlen der Ultimate für den aktuellen Helden — für Wirkung und Anzeige */
@@ -2100,7 +2143,7 @@ function ultStats(h,rankOverride){
   const U=ULTS[h.cls],r=rankOverride||h.ult.rank,p=h.ult.path,L=h.level;
   const avg=(h.dmgMin+h.dmgMax)/2;
   const f=avg*(1+(r-1)*.22)*(1+L*.03);    // wächst mit Rang und mit jeder Stufe
-  const S={rank:r,path:p,tier:ultTier(r),cd:Math.max(22,45-(r-1)*2.5),col:p?U.paths[p].col:U.col};
+  const S={rank:r,path:p,tier:ultTier(r),cd:Math.max(60,100-(r-1)*4.4),col:p?U.paths[p].col:U.col};
   if(h.cls==="warrior"){
     S.dmg=f*5*(p==="A"?1.25:1);S.stun=1.2+r*.12+(p==="A"?1.5:0);
     if(p==="B"){S.aspd=30+r*4;S.leech=6+r;S.rageT=8;S.ragePct=S.tier>=4?25:0;}
@@ -2213,7 +2256,7 @@ const META=[
   {k:"gold",n:"Erbe des Händlers",d:"+15% Startgold pro Rang",max:5,cost:6},
   {k:"hp",n:"Ahnenblut",d:"+6% maximales Leben pro Rang",max:5,cost:8},
   {k:"dmg",n:"Kriegserinnerung",d:"+5% Schaden pro Rang",max:5,cost:8},
-  {k:"potion",n:"Bessere Tränke",d:"Tränke heilen +20% und du startest mit einem mehr",max:3,cost:10},
+  {k:"potion",n:"Bessere Tränke",d:"Tränke heilen +20 %, du startest mit einem mehr und der Gürtel fasst einen mehr",max:3,cost:10},
   {k:"shard",n:"Seelenanker",d:"+12% Seelensplitter pro Rang",max:5,cost:12},
   {k:"mf",n:"Gespür für Beute",d:"+10% Magiefund pro Rang",max:5,cost:10},
   {k:"smith",n:"Meisterschmied",d:"Bessere Waren beim Händler, 25 % Rabatt in der Schmiede und zwei zusätzliche Aufwertungsstufen",max:1,cost:30},
@@ -2307,7 +2350,7 @@ class Hero extends Entity{
     this.level=1;this.xp=0;this.gold=0;this.potions=3+(meta.potion||0);
     this.skillPts=1+(meta.skill||0);this.skills={};
     this.ult={rank:1,path:null};this.ultCd=12;   // Ultimative Fähigkeit: Rang 1 von Beginn an
-    this.attrPts=3;                       // drei Punkte pro Stufe, frei verteilbar
+    this.attrPts=4;                       // vier Punkte pro Stufe, frei verteilbar
     this.alloc={str:0,dex:0,int:0,vit:0}; // selbst verteilte Punkte (Grundlage der Vererbung)
     this.equip={};this.bag=[];this.gems=[];
     this.statPts=0;this.base={str:5,dex:5,int:5,vit:5};
@@ -2436,8 +2479,8 @@ class Enemy extends Entity{
       const bn=BOSS_NAMES[(Math.floor(level/10)-1)%BOSS_NAMES.length];
       this.model=BOSS_MODELS[(Math.floor(level/10)-1)%BOSS_MODELS.length];
       this.name=bn[0];this.hue=bn[1];this.scale=4;
-      this.maxHp=Math.round((150+level*70+QS(level,2)*49)*(1+zone*.18));
-      this.dmg=Math.round((6+level*2.4+QS(level,3)*1.84)*(1+zone*.16));
+      this.maxHp=Math.round((150+level*70+QS(level,2)*49)*(1+zone*.18)*diffScale(level,"hp"));
+      this.dmg=Math.round((6+level*2.4+QS(level,3)*1.84)*(1+zone*.16)*diffScale(level,"dmg"));
       this.atkPerSec=.62;this.xp=Math.round(240+level*95);this.gold=Math.round(90+level*30);
       this.affix=null;this.enraged=false;
     }else{
@@ -2453,8 +2496,8 @@ class Enemy extends Entity{
         hpM*=a.hp;dmM*=a.dm;this.hue=Math.round(lerp(this.hue,a.hue,.65));
         if(a.k==="giant")this.scale=Math.round(this.scale*1.55);
       }else this.affix=null;
-      this.maxHp=Math.round((26+level*13+QS(level,2)*7.0)*hpM*(1+zone*.14));
-      this.dmg=Math.round((3.5+level*1.35+QS(level,3)*1.15)*dmM*(1+zone*.16));
+      this.maxHp=Math.round((26+level*13+QS(level,2)*7.0)*hpM*(1+zone*.14)*diffScale(level,"hp"));
+      this.dmg=Math.round((3.5+level*1.35+QS(level,3)*1.15)*dmM*(1+zone*.16)*diffScale(level,"dmg"));
       this.atkPerSec=(this.affix&&this.affix.k==="swift")?1.15:.78;
       this.xp=Math.round((14+level*8)*(this.affix&&this.affix.k==="ancient"?2.2:1));
       this.gold=Math.round((6+level*3.4)*(this.affix&&this.affix.k==="golden"?4:1));
@@ -2723,6 +2766,9 @@ class Game{
       if(Math.random()<.18)this.parts.add(122+rnd(-8,8),GROUND-rnd(6,40),1,{dir:-Math.PI/2,spread:.3,
         spdMin:10,spdMax:30,lifeMin:.3,lifeMax:.6,col:pick(["#ffd166","#ff7a2b"]),size:1,g:-30,glow:1});}
     if(h.regen)h.hp=Math.min(h.maxHp,h.hp+h.maxHp*h.regen/100*dt);
+    if((h.sk.regen||0)>0&&h.hp<h.maxHp&&Math.random()<.04)
+      this.parts.add(122+rnd(-8,8),GROUND-rnd(8,36),1,{dir:-Math.PI/2,spread:.2,spdMin:8,spdMax:18,
+        lifeMin:.5,lifeMax:.9,col:"#5ce08a",size:1,g:-6});
     if(this.mountCd>0)this.mountCd-=dt;
     if(this.rideT>0){                        // Ritt: der Boden fliegt vorbei
       this.rideT-=dt;
@@ -2742,6 +2788,13 @@ class Game{
     }
     if(h.hp/h.maxHp<.32&&h.potions>0&&this.state==="fight")this.usePotion();
     if(h.ultCd>0)h.ultCd=Math.max(0,h.ultCd-dt);
+    // Schutzfähigkeit: Abklingzeit und Wirkdauer
+    if(h.defCd>0)h.defCd=Math.max(0,h.defCd-dt);
+    if(h.ironT>0)h.ironT-=dt;
+    if(h.guardT>0)h.guardT-=dt;
+    if(h.dodgeT>0){h.dodgeT-=dt;if(h.dodgeT<=0)h.dodgeN=0;}
+    if(h.barrierT>0){h.barrierT-=dt;if(h.barrierT<=0&&h.barrier>0){h.barrier=0;
+      this.parts.add(122,GROUND-34,8,{spdMin:10,spdMax:40,lifeMin:.3,lifeMax:.6,col:"#bd93f9",size:1,g:-20,glow:1});}}
     if(h.ultShieldT>0){h.ultShieldT-=dt;if(h.ultShieldT<=0){h.ultShield=0;UI.log("Der Heilige Schild verblasst.","sys");}
       else if(h.ultShieldRegen)h.hp=Math.min(h.maxHp,h.hp+h.maxHp*.02*dt);}
 
@@ -2826,7 +2879,7 @@ class Game{
     }
     this.enemy=this.target();
     if(h.lunge>0)h.lunge-=dt*4;
-    UI.updateBars();UI.updateUlt();
+    UI.updateBars();UI.updateUlt();UI.updateDef();
   }
   doShake(t,mag){if(t>this.shake){this.shake=t;this.shakeMag=mag;}}
   /* ---------- Weltobjekte: Fallen, Brunnen, Segen ---------- */
@@ -3043,17 +3096,21 @@ class Game{
       Die Anzahl folgt der Stärke (1 % → 1 Kugel, ab 30 % → 16). Jede Kugel fliegt
       ihre eigene, leicht andere Bogenbahn, beschleunigt sanft und bremst vor dem Helden. */
   leechOrbs(x0,y0,leech,heal){
+    // Zurückhaltend: höchstens ein Schwarm alle 0,7 s, auch bei schnellen Angriffen
+    if(heal>0&&this._leechT&&this.time-this._leechT<.7){return;}
+    if(heal<=0&&this._leechT&&this.time-this._leechT<1.4){return;}
+    this._leechT=this.time;
     const n=clamp(Math.round(1+(leech-1)*15/29),1,16);
     const hx=122+(this.heroOx||0),hy=GROUND-40-(this.heroOy||0);
     for(let j=0;j<n;j++){
       // Fächer aus Bahnen: abwechselnd über und unter der Verbindungslinie, nach außen weiter
       const side=j%2?1:-1,spread=Math.ceil(j/2)/Math.max(1,Math.ceil((n-1)/2));
-      const bend=n===1?-18:side*(10+spread*34)-8;
+      const bend=n===1?-12:side*(6+spread*20)-5;
       this.spells.orb(x0+rnd(-3,3),y0+rnd(-4,4),hx+rnd(-3,3),hy+rnd(-7,7),{
-        bend,lean:rnd(-14,14),delay:j*(n>8?.028:.045),max:rnd(.52,.68),r:rnd(2.1,3),
+        bend,lean:rnd(-8,8),delay:j*(n>8?.03:.05),max:rnd(.55,.7),r:rnd(1.1,1.7),
         onArrive:j===0?()=>{
           if(heal>0)this.fct.add(120,GROUND-46,"+"+heal,"heal");
-          this.spells.flare(hx,hy,"#ff4d6d",8+n*.8,.25);
+          this.spells.flare(hx,hy,"#ff4d6d",5+n*.3,.18);
         }:null});
     }
   }
@@ -3090,6 +3147,33 @@ class Game{
     return true;
   }
   ultAlive(){return this.enemies.filter(e=>!e.dead);}
+  defReady(){const h=this.hero;
+    return !!h&&(this.state==="fight"||this.state==="approach")&&!(h.defCd>0)&&!this.defActive();}
+  defActive(){const h=this.hero;return !!h&&(h.ironT>0||h.barrierT>0||(h.dodgeT>0&&h.dodgeN>0)||h.guardT>0);}
+  /** Schutzfähigkeit auslösen — manuell, nur wenn Gegner da sind */
+  castDef(){
+    const h=this.hero;if(!h||this.state==="dead"||this.state==="idle")return false;
+    const P=passiveStats(h),N=ULT_PASSIVES[h.cls];
+    if(h.defCd>0){UI.toast(N.n+" lädt noch "+Math.ceil(h.defCd)+" s.");return false;}
+    if(this.defActive()){UI.toast(N.n+" wirkt bereits.");return false;}
+    if(this.state!=="fight"&&this.state!=="approach"){UI.toast("Kein Gegner in Sicht.");return false;}
+    h.defCd=P.cd;SFX.init();
+    const cx=122,cy=GROUND-34;
+    if(h.cls==="warrior"){h.ironT=P.dur;
+      this.spells.nova(cx,GROUND,"#c9c4d8",70);SFX.block();
+      this.parts.add(cx,cy,14,{spdMin:20,spdMax:70,lifeMin:.3,lifeMax:.6,col:()=>pick(["#8a8696","#c9c4d8","#ffffff"]),size:2,g:120});}
+    else if(h.cls==="mage"){h.barrierMax=Math.round(h.maxHp*P.pct/100);h.barrier=h.barrierMax;h.barrierT=P.dur;
+      this.spells.flare(cx,cy,"#bd93f9",30,.35);SFX.socket();
+      this.parts.add(cx,cy,16,{spdMin:20,spdMax:60,lifeMin:.3,lifeMax:.7,col:()=>pick(["#bd93f9","#e0c6ff"]),size:1,g:-20,glow:1});}
+    else if(h.cls==="rogue"){h.dodgeN=P.n;h.dodgeT=P.dur;
+      this.parts.add(cx,cy,20,{spdMin:20,spdMax:80,lifeMin:.3,lifeMax:.7,col:()=>pick(["#1a1426","#3b2a5c","#50fa7b"]),size:3,g:-30});SFX.swing();}
+    else{const g=Math.round(h.maxHp*P.heal/100);h.hp=Math.min(h.maxHp,h.hp+g);h.guardT=P.dur;
+      this.fct.add(118,GROUND-64,"+"+g,"heal");this.spells.pillar(cx,"#fff3b0");SFX.heal();}
+    this.fct.add(118,GROUND-82,N.n,"crit");
+    UI.log(N.n+": "+P.d,"lvl");
+    UI.updateUlt(true);
+    return true;
+  }
   ultWarrior(h,S){
     const T=S.tier,A=S.path==="A",B=S.path==="B";
     const ringCol=A?"#d8a657":B?"#ff3b3b":"#ffb347";
@@ -3253,7 +3337,38 @@ class Game{
       c.fillText(U.sub+" \u00B7 "+ULT_TIERS[U.tier-1],W/2,y+13);}
     c.restore();c.textAlign="left";
   }
+  /** Sichtbarer Zustand der Schutz-Passive am Helden */
+  drawPassive(c){
+    const h=this.hero;if(!h||this.state==="idle"||this.state==="dead")return;
+    const cx=120+(this.heroOx||0),cy=GROUND-26-(this.heroOy||0);
+    if(h.cls==="mage"&&h.barrier>0&&h.barrierMax){
+      const k=h.barrier/h.barrierMax;
+      c.save();c.globalAlpha=.08+.12*k;c.fillStyle="#bd93f9";
+      c.beginPath();c.ellipse(cx,cy,22,29,0,0,7);c.fill();
+      c.globalAlpha=.2+.35*k;c.strokeStyle="#e0c6ff";c.lineWidth=1;
+      c.setLineDash([3,4]);c.lineDashOffset=this.time*12;
+      c.beginPath();c.ellipse(cx,cy,22,29,0,0,7);c.stroke();c.setLineDash([]);c.restore();
+    }
+    if(h.cls==="rogue"&&h.dodgeT>0&&h.dodgeN>0){
+      c.save();for(let i=0;i<h.dodgeN;i++){const a=this.time*3+i*Math.PI*2/h.dodgeN;
+        c.globalAlpha=.55;c.fillStyle="#50fa7b";c.fillRect(cx+Math.cos(a)*16-1,cy+6+Math.sin(a)*5-1,3,3);}
+      c.globalAlpha=.14;c.fillStyle="#1a1426";c.beginPath();c.ellipse(cx,cy+4,16,26,0,0,7);c.fill();c.restore();
+    }
+    if(h.cls==="paladin"&&h.guardT>0){
+      const a=Math.min(1,h.guardT);
+      c.save();c.globalAlpha=.45*a;c.strokeStyle="#ffd166";c.lineWidth=2;c.shadowBlur=8;c.shadowColor="#ffd166";
+      c.beginPath();c.ellipse(cx,cy-30,10,3,0,0,7);c.stroke();
+      c.globalAlpha=.1*a;c.fillStyle="#fff3b0";c.fillRect(cx-12,cy-30,24,58);c.restore();
+    }
+    if(h.cls==="warrior"&&h.ironT>0){
+      const a=Math.min(1,h.ironT)*(.6+.2*Math.sin(this.time*10));
+      c.save();c.globalAlpha=.35*a;c.strokeStyle="#c9c4d8";c.lineWidth=3;c.shadowBlur=8;c.shadowColor="#ffffff";
+      c.beginPath();c.ellipse(cx,cy+4,18,27,0,0,7);c.stroke();
+      c.globalAlpha=.12*a;c.fillStyle="#8a8696";c.beginPath();c.ellipse(cx,cy+4,18,27,0,0,7);c.fill();c.restore();
+    }
+  }
   drawUltDome(c){
+    this.drawPassive(c);
     const h=this.hero;if(!h||!(h.ultShield>0))return;
     const k=h.ultShield/(h.ultShieldMax||1),tier=ultTier(h.ult.rank);
     const art=ASSETS.affix_shielded;
@@ -3448,10 +3563,17 @@ class Game{
       const healed=h.hp<h.maxHp;
       if(healed)h.hp=Math.min(h.maxHp,h.hp+heal);
       this.leechOrbs(ex,ey,h.leech,healed?heal:0);}
-    if(extra&&!blocked){                   // Zweitschlag: Nachbild in Türkis
-      this.spells.flare(ex-8,ey,"#8be9fd",16,.2);
-      if(Math.random()<.5)this.fct.add(ex,ey-22,"Zweitschlag","block");
+    if(extra&&!blocked){                   // Doppelschlag: blasser türkiser Nachhieb
+      this.spells.slash(ex-2,ey+2,"#8be9fd",1,.7);
     }
+    // Henkersschlag: beim Eintritt in die Hinrichtungszone eine rote Kerbe, danach nur noch leise
+    if((h.sk.execute||0)>0&&e.hpPct<.30&&!e.dead){
+      if(!e._skExec){e._skExec=true;this.spells.slash(ex,ey,"#ff4d4d",-1,.8);}
+      else if(Math.random()<.25)this.parts.add(ex,ey,3,{spdMin:20,spdMax:60,lifeMin:.15,lifeMax:.3,col:"#ff6b6b",size:1,g:0});
+    }
+    // Bossjäger: violette Splitter bei Treffern gegen Bosse und Minibosse
+    if((h.sk.bossdmg||0)>0&&(e.boss||e.mini)&&!blocked&&Math.random()<.5)
+      this.parts.add(ex,ey,4,{spdMin:30,spdMax:80,lifeMin:.2,lifeMax:.4,col:pick(["#c39bff","#ffffff"]),size:1,g:0,glow:1});
     if(h.hasUniq("execute")&&e.hpPct<.30&&!e.dead&&!e._exec){
       e._exec=true;                        // Henkersbeil: einmal sichtbar ansagen
       this.spells.flare(ex,ey,"#ff3b3b",26,.35);
@@ -3568,8 +3690,20 @@ class Game{
     const mit=h.armor/(h.armor+45+22*h.level);
     dmg=Math.max(1,Math.round(dmg*(1-mit)));
     dmg*=1-h.dmgRed/100;
+    if(h.dodgeN>0&&h.dodgeT>0){h.dodgeN--;if(h.dodgeN<=0)h.dodgeT=0;
+      // Schattenhaut: der Held weicht aus, ein dunkles Nachbild bleibt kurz stehen
+      this._hitFx=null;
+      this.fct.add(118,GROUND-60,"Ausgewichen","block");
+      this.parts.add(112,GROUND-30,10,{dir:Math.PI,spread:.5,spdMin:30,spdMax:70,lifeMin:.25,lifeMax:.45,
+        col:()=>pick(["#1a1426","#3b2a5c","#50fa7b"]),size:2,g:-10});
+      h.lunge=-.6;SFX.swing();return;
+    }
     const blocked=Math.random()*100<h.blockChance;
-    if(blocked){dmg=Math.round(dmg*.3);this.parts.sparks(126,GROUND-40);SFX.block();}
+    if(blocked){dmg=Math.round(dmg*.3);this.parts.sparks(126,GROUND-40);SFX.block();
+      this.spells.slash(128,GROUND-34,(h.sk.block||0)>0?"#8be9fd":"#c9c4d8",1,(h.sk.block||0)>0?1.1:.8);}
+    // Steinhaut / Unsterblich: graue Steinsplitter, wenn Schaden abgefangen wird
+    else if((h.sk.dr||0)>0&&Math.random()<.5)
+      this.parts.add(122,GROUND-36,3,{spdMin:20,spdMax:60,lifeMin:.2,lifeMax:.4,col:pick(["#8a8696","#c9c4d8"]),size:1,g:200});
     this.damageHero(dmg,e.name,false,crit,blocked,e);
     if(e.boss){this.doShake(crit?.42:.22,crit?6.5:3.4);}
     else if(crit)this.doShake(.16,2.6);
@@ -3596,6 +3730,15 @@ class Game{
     const h=this.hero;
     if(foe)this.lastFoe=foe;
     this.lastCause=src;
+    h.lastHitT=this.time;
+    if(h.ironT>0)dmg=Math.max(1,Math.round(dmg*(1-passiveStats(h).red/100)));   // Eiserner Wille
+    if(h.barrier>0&&dmg>0){                  // Arkane Barriere
+      const take=Math.min(h.barrier,dmg);h.barrier-=take;dmg-=take;
+      this.parts.add(122,GROUND-40,4,{spdMin:20,spdMax:70,lifeMin:.15,lifeMax:.3,col:"#bd93f9",size:1,g:0,glow:1});
+      if(h.barrier<=0){h.barrierT=0;this.fct.add(118,GROUND-70,"Barriere bricht","block");
+        this.parts.add(122,GROUND-34,16,{spdMin:50,spdMax:140,lifeMin:.25,lifeMax:.5,col:()=>pick(["#bd93f9","#e0c6ff"]),size:2,g:120,glow:1});}
+      if(dmg<=0){this._hitFx=null;return;}
+    }
     if(h.ultShield>0&&dmg>0){                // Heiliger Schild schluckt zuerst
       const take=Math.min(h.ultShield,dmg);h.ultShield-=take;dmg-=take;
       this.parts.add(122,GROUND-40,6,{spdMin:30,spdMax:90,lifeMin:.2,lifeMax:.4,col:"#ffd166",size:2,g:0,glow:1});
@@ -3611,6 +3754,10 @@ class Game{
     if(!silent&&!blocked)SFX.hurt();
     if(!silent&&Math.random()<.5)UI.log(src+" trifft für "+dmg+(crit?" (kritisch!)":"")+".","dmg");
     if(silent)UI.log("Gift verursacht "+dmg+" Schaden.","dmg");
+    if(h.hp<=0&&h.guardT>0){                 // Göttlicher Schutz: kein Treffer tötet
+      h.hp=1;this.fct.add(118,GROUND-78,"Geschützt","crit");
+      this.spells.flare(122,GROUND-40,"#ffd166",22,.25);
+    }
     if(h.hp<=0){h.hp=0;this.heroDies();}
   }
   usePotion(){
@@ -3620,6 +3767,8 @@ class Game{
     h.hp=Math.min(h.maxHp,h.hp+heal);
     this.fct.add(120,GROUND-58,"+"+heal,"heal");
     this.parts.puff(120,GROUND-40,"#5ce08a");
+    if((h.sk.potion||0)>0)this.parts.add(120,GROUND-30,6+Math.floor(h.sk.potion/10),{dir:-Math.PI/2,spread:.5,
+      spdMin:14,spdMax:36,lifeMin:.5,lifeMax:.9,col:pick(["#ff8fb1","#c6ffd8","#ffffff"]),size:2,g:-14});
     UI.log("Trank getrunken: +"+heal+" Leben ("+h.potions+" übrig).","heal");
     SFX.loot();UI.renderAll();
   }
@@ -3652,7 +3801,15 @@ class Game{
     this.fct.add(cx,cy-26,"+"+xp+" XP","xp");
     UI.log(e.name+" fällt. +"+gold+" Gold, +"+xp+" Erfahrung.","gold");
     if(h.sk.killheal){const heal=Math.round(h.maxHp*h.sk.killheal/100);
-      h.hp=Math.min(h.maxHp,h.hp+heal);this.fct.add(120,GROUND-58,"+"+heal,"heal");}
+      h.hp=Math.min(h.maxHp,h.hp+heal);this.fct.add(120,GROUND-58,"+"+heal,"heal");
+      // Zweiter Wind: ein leiser grüner Windstoß um den Helden
+      this.spells.nova(122,GROUND+4,"#9df3dc",26);
+      for(let j=0;j<6;j++){const a=j/6*Math.PI*2;
+        this.parts.add(122+Math.cos(a)*12,GROUND-20+Math.sin(a)*5,1,{dir:-Math.PI/2+Math.cos(a)*.6,spread:.2,
+          spdMin:20,spdMax:40,lifeMin:.35,lifeMax:.6,col:"#9df3dc",size:1,g:-10});}}
+    if((h.sk.gf||0)>0&&Math.random()<.6)          // Goldgier: ein paar Münzen springen auf
+      this.parts.add(cx,cy-6,3+Math.min(4,Math.floor(h.sk.gf/15)),{dir:-Math.PI/2,spread:.7,spdMin:50,spdMax:110,
+        lifeMin:.4,lifeMax:.7,col:pick(["#ffc861","#ffe9a8"]),size:2,g:320});
     // Seelensplitter
     let sh=0;                                   // Splitter fallen achtmal seltener als früher
     if(e.boss)sh=1+Math.floor(h.level/16);
@@ -3663,6 +3820,7 @@ class Game{
       sh=Math.round(sh*(1+(this.meta.shard||0)*.12));h.shardsRun+=sh;
       this.fct.add(cx,cy-38,"+"+sh+" \u2726","loot");
       this.parts.ring(cx,cy-20,"#7ef0d0");
+      if((h.sk.shard||0)>0)this.spells.orb(cx,cy-20,122,GROUND-44,{bend:-26,lean:0,delay:.15,max:.9,r:2,col:"#7ef0d0",core:"#eafff7"});
       SFX.loot();
       UI.log("+"+sh+" Seelensplitter \u2014 dieser Lauf: "+h.shardsRun+".","loot");
     }
@@ -3685,7 +3843,11 @@ class Game{
       this.doShake(.3,3);SFX.levelup();
       UI.log("Eine Rune fällt: "+rn.name+" \u2014 "+rn.uniqTxt,"loot");
     }   // Seelensteine sind selten
-    if(Math.random()<.14){h.potions++;UI.log("Ein Heiltrank gefunden.","loot");}
+    if(Math.random()<.09){
+      if(h.potions<potionCap()){h.potions++;UI.log("Ein Heiltrank gefunden.","loot");}
+      else{const g=Math.round(8+h.level*3);h.gold+=g;               // Gürtel voll: Trank wird zu Gold
+        UI.log("Ein Heiltrank gefunden \u2014 der Gürtel ist voll, er bringt "+g+" Gold.","gold");}
+    }
     if(e.boss){
       h.bossKills++;this.stats.bosses++;
       // Weltenbosse werden auf dem Weg vermerkt — Minibosse ausdrücklich nicht
@@ -3756,12 +3918,12 @@ class Game{
   checkLevel(){
     const h=this.hero;let leveled=false;
     while(h.xp>=h.xpNeeded()){
-      h.xp-=h.xpNeeded();h.level++;h.skillPts++;h.attrPts+=3;leveled=true;
+      h.xp-=h.xpNeeded();h.level++;h.skillPts+=3;h.attrPts+=4;leveled=true;
       // Keine automatischen Attribute mehr — der Spieler verteilt selbst
       h.recompute();h.hp=h.maxHp;
-      UI.log("Du hast 3 Attributpunkte und 1 Fähigkeitspunkt zu vergeben.","lvl");
+      UI.log("Du hast 4 Attributpunkte und 3 Fähigkeitspunkte zu vergeben (Fertigkeiten oder Ultimative Fähigkeit).","lvl");
       this.stats.bestLevel=Math.max(this.stats.bestLevel,h.level);
-      UI.log("STUFE "+h.level+" erreicht! Voll geheilt, +1 Fähigkeitspunkt.","lvl");
+      UI.log("STUFE "+h.level+" erreicht! Voll geheilt, +3 Fähigkeitspunkte.","lvl");
       this.parts.confetti(120,GROUND-50);
       this.fct.add(120,GROUND-80,"STUFE "+h.level,"crit");
       if(h.level%10===0){this.bossPending=true;
@@ -4833,6 +4995,7 @@ const UI={
         if(e.key===" ")e.preventDefault();
         if(!$("overlay").classList.contains("on"))G.castUlt();
       }
+      if((e.key==="f"||e.key==="F")&&G.hero&&!/INPUT|TEXTAREA|SELECT/.test(tag)&&!$("overlay").classList.contains("on"))G.castDef();
       const map={"1":"hero","2":"inv","3":"skills","4":"town","5":"ahnen","6":"sys"};
       if(map[e.key])this.switchTab(map[e.key]);
     });
@@ -5392,6 +5555,27 @@ const UI={
     const tt=h.ultCd>0?Math.ceil(h.ultCd)+"s":"";
     if(tt!==this._ultT){this._ultT=tt;$("ultTime").textContent=tt;}
   },
+  /** Schutz-Knopf: Ladefüllung, Restzeit; leuchtet, solange die Wirkung läuft */
+  updateDef(){
+    const b=$("defBtn");if(!b)return;
+    const h=G.hero;
+    const show=!!h&&G.state!=="idle"&&G.state!=="dead";
+    if(!show){if(b.classList.contains("on"))b.classList.remove("on");return;}
+    if(!b.classList.contains("on")||this._defFor!==h.cls){
+      this._defFor=h.cls;const N=ULT_PASSIVES[h.cls];
+      b.classList.add("on");b.style.setProperty("--uc",N.col);$("defIco").textContent=N.ico;
+      b.title=N.n+" \u00B7 Taste F";b.onclick=()=>{SFX.init();G.castDef();};
+    }
+    const cd=passiveStats(h).cd;
+    const p=Math.round((1-clamp((h.defCd||0)/cd,0,1))*100);
+    if(p!==this._defP){this._defP=p;b.style.setProperty("--p",p);}
+    const act=G.defActive();
+    b.classList.toggle("active",act);
+    b.classList.toggle("ready",!act&&G.defReady());
+    b.classList.toggle("wait",!act&&!(h.defCd>0)&&!G.defReady());
+    const tt=act?"aktiv":h.defCd>0?Math.ceil(h.defCd)+"s":"";
+    if(tt!==this._defT){this._defT=tt;$("defTime").textContent=tt;}
+  },
   /** Ultimate-Karte oben im Fertigkeiten-Tab */
   ultCardHtml(){
     const h=G.hero,U=ULTS[h.cls],r=h.ult.rank,S=ultStats(h),T=S.tier;
@@ -5401,6 +5585,11 @@ const UI={
       '<small>Ultimative Fähigkeit \u00B7 Rang '+r+' / '+ULT_MAX+' \u00B7 auslösen mit dem Knopf im Bild oder Taste R</small></div></div>'+
       '<div class="udesc">'+U.d+(h.ult.path?' '+U.paths[h.ult.path].d:"")+'</div>'+
       ultLines(h,S).map(l=>'<div class="uline">'+l+'</div>').join("")+
+      '<div class="upas"><b>'+ULT_PASSIVES[h.cls].ico+' Schutz: '+ULT_PASSIVES[h.cls].n+'</b> '+
+      '<span style="color:var(--muted)">(Knopf neben der Ultimate oder Taste F)</span><br>'+passiveStats(h).d+
+      ' Abklingzeit '+Math.round(passiveStats(h).cd)+' s.'+
+      (r<ULT_MAX?' <span style="color:var(--good)">Rang '+(r+1)+': '+passiveStats(h,r+1).short+
+        ', '+Math.round(passiveStats(h,r+1).cd)+' s</span>':"")+'</div>'+
       '<div class="utier">Erscheinung: '+[1,2,3,4].map(i=>'<i class="'+(i<=T?"on":"")+'"></i>').join("")+
       ' <b style="color:var(--uc)">'+ULT_TIERS[T-1]+'</b>'+
       (T<4?' \u2014 nächste Stufe ab Rang '+[4,7,10][T-1]:"")+'</div>';
@@ -5539,7 +5728,7 @@ const UI={
     let html=this.ultCardHtml();
     html+='<div class="row"><span>Verfügbare Punkte</span><b style="color:var(--acc)">'+h.skillPts+'</b></div>'+
       '<div class="row"><span>Gelernte Ränge</span><b>'+spent+" / "+total+'</b></div>'+
-      '<div class="hint">Ein Punkt pro Stufe. Fähigkeit anklicken, um ihre Wirkung zu sehen — '+
+      '<div class="hint">Drei Punkte pro Stufe — frei verteilbar auf die Fertigkeiten unten oder die Ultimative Fähigkeit oben. Fähigkeit anklicken, um ihre Wirkung zu sehen — '+
       'gelernt wird erst über den Knopf.</div>'+
       '<div class="tree" style="height:'+(ROWS*80+120)+'px">'+heads+'<svg>'+lines+'</svg>'+nodes+'</div>';
     $("tab-skills").innerHTML=html;
@@ -5566,7 +5755,8 @@ const UI={
     let html='<div class="h3">Händler</div><div class="shop">';
     html+='<div class="offer"><div class="ic" style="color:#5ce08a">'+artImg("misc_potion","\u2665")+'</div>'+
       '<div class="meta"><div>Heiltrank</div><small>Stellt '+Math.round(35+(G.meta.potion||0)*7)+' % Leben her</small></div>'+
-      '<button class="btn" data-buy="potion">'+this.potionPrice()+' G</button></div>';
+      '<button class="btn" data-buy="potion"'+(h.potions>=potionCap()?" disabled":"")+'>'+
+        (h.potions>=potionCap()?"Gürtel voll":this.potionPrice()+' G')+'</button></div>';
     G.shop.forEach((o,i)=>{
       html+='<div class="offer"><div class="ic" style="color:'+RARITY[o.it.rar].hex+'" data-shop="'+i+'">'+
         artImg(artIdFor(o.it),SLOTS[o.it.slot].ico)+'</div><div class="meta"><div style="color:'+RARITY[o.it.rar].hex+'">'+o.it.name+
@@ -5687,6 +5877,7 @@ const UI={
     const el=$("tab-town");el.innerHTML=html;
     el.querySelector("[data-buy=potion]").onclick=()=>{
       const p=this.potionPrice();
+      if(h.potions>=potionCap()){this.toast("Der Trankgürtel ist voll ("+potionCap()+").");return;}
       if(h.gold<p){this.toast("Zu wenig Gold.");return;}
       h.gold-=p;h.potions++;SFX.buy();this.log("Heiltrank gekauft.","gold");this.renderTown();this.updateBars();
     };
