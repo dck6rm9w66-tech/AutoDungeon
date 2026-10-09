@@ -1304,7 +1304,8 @@ function loadAssets(){
    danach nur noch als Bild kopiert — sonst kostet die vierfache Pixelzahl zu viel. */
 const SPR_CACHE={};let SPR_KEYS=0;
 function spriteBitmap(sp,pal,flash){
-  const key=(sp.id||"?")+"|"+(sp._rot||0)+"|"+(flash||pal[2]+pal[4]+pal[6]);
+  const fxs=sp._fx?variantFilter(((sp._rot||0)+ASSET_HUE+360)%360,sp._fx):"";
+  const key=(sp.id||"?")+"|"+(sp._rot||0)+"|"+fxs+"|"+(flash||pal[2]+pal[4]+pal[6]);
   let cv=SPR_CACHE[key];
   if(cv)return cv;
   if(SPR_KEYS>240){for(const k in SPR_CACHE)delete SPR_CACHE[k];SPR_KEYS=0;}
@@ -1315,7 +1316,9 @@ function spriteBitmap(sp,pal,flash){
   if(art){
     if(sp._rot&&CAN_FILTER){
       // Farbtondrehung: alle Farben der Zeichnung wandern um denselben Winkel
-      x.filter="hue-rotate("+sp._rot+"deg) saturate("+TINT_SATURATE+")";
+      // Einfärbung (graue Sprites) ersetzt die Drehung, sonst Drehung plus Helligkeit/Sättigung
+      x.filter=(sp._fx&&sp._fx.c)?fxs:
+        "hue-rotate("+sp._rot+"deg) saturate("+TINT_SATURATE+")"+(fxs?" "+fxs:"");
       x.drawImage(art,0,0,sp.w,sp.h);
       x.filter="none";
     }else if(sp._rot){
@@ -1362,8 +1365,9 @@ function affixMask(id,sp,pal,hue){
   return AFFIX_CACHE[key]=cv;
 }
 /** `scale` = logische Pixel je URSPRUNGS-Pixel; die Matrix ist doppelt so fein */
-function drawSprite(ctx,sp,cx,groundY,scale,pal,flip,flash,alpha,hue){
+function drawSprite(ctx,sp,cx,groundY,scale,pal,flip,flash,alpha,hue,vfx){
   // Wie weit der Farbkreis gedreht wird — 0 lässt die Zeichnung unverändert
+  sp._fx=(hue!==undefined&&hue!==null&&vfx)?vfx:null;
   if(hue===undefined||hue===null){sp._rot=0;sp._tint=null;}
   else{
     sp._rot=Math.round(((hue-ASSET_HUE)%360+540)%360-180);
@@ -2037,6 +2041,54 @@ const BESTIARY=[
   {m:"lich",t:6,hp:1.5,dm:1.55,sc:3,v:[["Lichjünger",165],["Grabfürst",270],["Seelendieb",300]]},
   {m:"eldritch",t:6,hp:1.7,dm:1.6,sc:3,v:[["Namenloses",245],["Tiefenbrut",175],["Das Auge",290]]}
 ];
+/* Farbfilter je Gegnervariante, zusätzlich zur Farbtondrehung:
+   h = neuer Farbton (ersetzt den aus dem Bestiarium), s = Sättigung, b = Helligkeit,
+   c = Einfärbung 0..1 — nur für weiße/graue Sprites, die eine reine Drehung nicht ändert.
+   Ziel: Varianten einer Art sind auf einen Blick unterscheidbar. */
+const VARIANT_FX={
+  "Feuer-Slime":{s:1.25},"Eis-Slime":{b:1.12},"Gift-Slime":{s:1.2},"Schlamm-Slime":{s:.55,b:.78},
+  "Wegelagerer":{s:1.15},"Söldner":{s:.7,b:1.1},"Deserteur":{s:1.1,b:.82},
+  "Dieb":{s:1.15},"Halsabschneider":{s:1.35},"Schattenläufer":{s:.6,b:.62},
+  "Wolf":{h:215,s:.3,b:1.08},"Höhlenbär":{s:1.1,b:.68},"Säbelkatze":{h:48,s:1.45,b:1.18},"Schattenhund":{s:.9,b:.58},
+  "Würgeranke":{s:1.1},"Blutblüte":{s:1.3,b:1.05},"Sporenkappe":{h:35,s:.8,b:.9},
+  "Blutfledermaus":{s:1.2},"Harpyie":{b:1.15},"Sturmkrähe":{s:.45,b:.6},
+  "Aufständischer":{s:1.15},"Bergrebell":{s:1.05,b:.85},"Freischärler":{h:170,s:1.1,b:1.1},
+  "Skelettkrieger":{b:1.05},"Knochenbogner":{h:95,c:.75,b:.88},"Grabwächter":{h:225,c:.95,b:.8},
+  "Blutkultist":{s:1.25},"Dunkelprediger":{s:.8,b:.75},"Aschenmönch":{s:.6,b:1.05},
+  "Steingolem":{s:.45,b:1.35},"Eisengolem":{s:.35,b:.85},"Kristallgolem":{h:178,s:1.7,b:1.4},
+  "Waldgeist":{s:1.15},"Nebelwandler":{s:.55,b:1.2},"Irrlicht":{h:55,s:1.4,b:1.25},
+  "Feuerelementar":{s:1.3},"Frostelementar":{b:1.15},"Sturmelementar":{s:1.2},"Erdelementar":{s:.8,b:.85},
+  "Klagegeist":{h:205,c:.95,b:.85},"Wehklage":{h:125,c:.7,b:.92},"Bleicher Schemen":{b:1.1},
+  "Grabwurm":{s:.8,b:.85},"Blutegel":{s:1.3},"Nervenfresser":{h:290,s:1.1},
+  "Missgestalt":{s:1.1},"Fleischklumpen":{s:1.2,b:1.1},"Verwachsener":{s:.7,b:.8},
+  "Baron der Asche":{s:.5,b:.8},"Tyrann":{s:1.2},"Blutfürst":{s:1.35,b:.95},
+  "Kleiner Dämon":{s:1.1},"Höllenhund":{h:28,s:1.4,b:1.25},"Schlundgeborener":{s:1.1,b:.8},
+  "Sternensaat":{s:1.2},"Grauer Späher":{s:.22,b:1.12},"Sondenwesen":{b:1.15},
+  "Astralwandler":{s:1.1},"Sternenfunke":{b:1.2},"Leerensplitter":{s:.7,b:.75},
+  "Lichjünger":{s:1.1},"Grabfürst":{s:.8,b:.85},"Seelendieb":{s:1.3},
+  "Namenloses":{s:1.1},"Tiefenbrut":{s:1.2,b:.75},"Das Auge":{s:1.3,b:1.1}
+};
+/** Filterkette für eine Variante (leer, wenn nichts zu tun ist) */
+function variantFilter(hue,fx){
+  if(!fx)return "";
+  const s=(fx.s||1),b=(fx.b||1);
+  if(fx.c)return "sepia("+fx.c+") saturate("+(1+fx.c*2.6).toFixed(2)+") hue-rotate("+Math.round(hue-38)+"deg) brightness("+b+")";
+  return "brightness("+b+") saturate("+s+")";
+}
+/* Ab welcher Heldenstufe eine Gegnerart überhaupt auftaucht — und ihr Sammelname.
+   Später erscheinende Arten lassen mehr und besser fallen (siehe lootBonus). */
+const UNLOCK={
+  slime:[1,"Schleime"],humanoid:[1,"Wegelagerer"],beast:[2,"Bestien"],bandit:[3,"Diebe"],
+  pflanze:[5,"Pflanzenwesen"],flying:[6,"Flugwesen"],rebell:[8,"Rebellen"],untoter:[9,"Untote"],
+  kultist:[11,"Kultisten"],geist:[12,"Naturgeister"],golem:[14,"Golems"],elementar:[15,"Elementare"],
+  gespenst:[17,"Gespenster"],parasit:[18,"Parasiten"],mutant:[20,"Mutanten"],tyrant:[22,"Tyrannen"],
+  daemon:[24,"Dämonen"],alien:[26,"Sternenwesen"],astral:[28,"Astralwesen"],lich:[30,"Liche"],eldritch:[33,"Namenlose"]
+};
+/** Beute-Bonus einer Gegnerart nach ihrer Freischaltstufe (1 = keiner) */
+function lootBonus(lv){
+  const k=Math.max(0,(lv||1)-1);
+  return {item:1+k*.02,mf:k*2.5,gem:1+k*.04,rune:1+k*.05,gold:1+k*.02};
+}
 const BOSS_MODELS=["boss0","boss1","boss2","boss3","boss4","boss5","boss6"];
 const BOSS_NAMES=[
   ["Grimm, der Torwächter",210],["Ogerkönig Bruk",90],["Vashek, Drache der Asche",15],
@@ -2512,12 +2564,24 @@ class Enemy extends Entity{
       this.maxHp=Math.round((150+level*70+QS(level,2)*49)*(1+zone*.18)*diffScale(level,"hp"));
       this.dmg=Math.round((6+level*2.4+QS(level,3)*1.84)*(1+zone*.16)*diffScale(level,"dmg"));
       this.atkPerSec=.62;this.xp=Math.round(240+level*95);this.gold=Math.round(90+level*30);
+      this.lootLv=level;
       this.affix=null;this.enraged=false;
     }else{
-      const pool=BESTIARY.filter(b=>b.t<=Math.max(1,Math.ceil(level/6)));
-      const b=pick(pool.length?pool:BESTIARY);
+      // Nur freigeschaltete Arten; frisch freigeschaltete erscheinen häufiger,
+      // lange bekannte werden mit der Zeit seltener (verschwinden aber nie ganz)
+      const pool=BESTIARY.filter(b=>(UNLOCK[b.m]?UNLOCK[b.m][0]:1)<=level);
+      const wsum=[];let tot=0;
+      for(const b of (pool.length?pool:BESTIARY)){
+        const age=level-(UNLOCK[b.m]?UNLOCK[b.m][0]:1);
+        const w=age<3?2.2:age<=10?1:Math.max(.18,1-(age-10)*.07);
+        tot+=w;wsum.push([tot,b]);
+      }
+      const rr=Math.random()*tot;
+      const b=(wsum.find(x=>rr<=x[0])||wsum[wsum.length-1])[1];
+      this.lootLv=UNLOCK[b.m]?UNLOCK[b.m][0]:1;
       const v=pick(b.v);
-      this.model=b.m;this.hue=v[1];this.scale=b.sc;
+      this.vfx=VARIANT_FX[v[0]]||null;
+      this.model=b.m;this.hue=(this.vfx&&this.vfx.h!==undefined)?this.vfx.h:v[1];this.scale=b.sc;
       let hpM=b.hp,dmM=b.dm;
       this.name=v[0];
       if(level>=6&&Math.random()<clamp(.10+level*.012,0,.55)){
@@ -2530,7 +2594,7 @@ class Enemy extends Entity{
       this.dmg=Math.round((3.5+level*1.35+QS(level,3)*1.15)*dmM*(1+zone*.16)*diffScale(level,"dmg"));
       this.atkPerSec=(this.affix&&this.affix.k==="swift")?1.15:.78;
       this.xp=Math.round((14+level*8)*(this.affix&&this.affix.k==="ancient"?2.2:1));
-      this.gold=Math.round((6+level*3.4)*(this.affix&&this.affix.k==="golden"?4:1));
+      this.gold=Math.round((6+level*3.4)*(this.affix&&this.affix.k==="golden"?4:1)*lootBonus(this.lootLv).gold);
       this.enraged=false;
       if(mini){
         // Miniboss: einzelner, deutlich überlegener Gegner mit eigenem Balken
@@ -2620,7 +2684,8 @@ class Game{
     this.bossMarks=[];
     this.graves=[];this.totalDist=0;
     this.stats={runs:0,bestLevel:0,bestZone:1,kills:0,bosses:0};
-    this.biome=BIOMES[0];this.biomeLeft=6;this.prevBiome=null;this.blend=1;
+    this.biome=BIOMES[0];this.biomeLeft=0;this.prevBiome=null;this.blend=1;   // 0 = noch nicht gewürfelt
+    this.wK=1;this.wNext=null;this.bolt=0;this.boltT=rnd(6,14);
     this.layers=this.buildLayers();
     this.hitStop=0;this.lootGlow=0;this.autoEquip=false;
     this.props=[];this.propT=18;this.mountCd=0;this.rideT=0;
@@ -2688,8 +2753,8 @@ class Game{
     this.biome=this.rollBiome();
     this.layers=this.buildLayers();
     updateMusic();
-    this.biomeLeft=ri(4,8);            // so viele Begegnungen bleibt die Umgebung
-    if(this.biome.indoor)this.weather=this.biome.dust?"fog":"clear";
+    this.biomeLeft=ri(24,48);          // so viele Begegnungen bleibt die Umgebung (früher 4–8)
+    if(this.biome.indoor){this.weather=this.biome.dust?"fog":"clear";this.wNext=null;this.wK=1;}
     if(!silent&&this.hero){
       UI.log("Die Landschaft wechselt: "+this.biome.n+".","sys");
       this.fct.add(210,58,this.biome.n,"loot");
@@ -2718,8 +2783,11 @@ class Game{
     this._heirGemN=this.heirGems.length;this._heirGoldN=this.heirGold;
     this.heirlooms=[];this.heirGems=[];this.heirGold=0;
     this.zone=1;this.dist=0;this.nextEncounter=130;this.enemy=null;this.enemies=[];
+    this.seenTypes={};
     this.totalDist=0;this.bossMarks=[];this.props=[];this.propT=rnd(10,20);
-    this.mountCd=0;this.rideT=0;this.changeBiome(true);
+    this.mountCd=0;this.rideT=0;
+    // Die Umgebung überdauert den Tod: ein neuer Held beginnt dort, wo der alte fiel
+    if(this.biomeLeft<=0)this.changeBiome(true);
     this.shop=null;   // Händlerwaren richten sich nach dem neuen Helden
     UI.sel=null;UI.selSkill=null;
     this.state="walk";this.lastBoss=0;this.bossPending=false;
@@ -2762,17 +2830,27 @@ class Game{
     }
     if(this.ultFx){this.ultFx.t+=dt;if(this.ultFx.t>=this.ultFx.max)this.ultFx=null;}
     if(this.heroAnim)this.stepHeroAnim(dt);
-    this.dayT=(this.dayT+dt/180)%1;               // voller Tageszyklus = 3 Minuten
+    this.dayT=(this.dayT+dt/300)%1;               // voller Tageszyklus = 5 Minuten
+    // Wetter wechselt gelegentlich und blendet weich über: altes Wetter klingt aus, neues setzt ein
     this.weatherT-=dt;
-    if(this.weatherT<=0){this.weatherT=rnd(45,95);
+    if(this.weatherT<=0){this.weatherT=rnd(50,110);
       const r=Math.random();
       const inside=this.biome&&this.biome.indoor;
-      const nw=inside?(r<.5?"clear":"fog"):(r<.55?"clear":r<.8?"rain":r<.93?"snow":"fog");
-      if(nw!==this.weather){this.weather=nw;
+      const nw=inside?(r<.5?"clear":"fog"):(r<.45?"clear":r<.66?"rain":r<.76?"storm":r<.9?"snow":"fog");
+      if(nw!==this.weather){this.wNext=nw;
         if(this.hero)UI.log(inside?
           {clear:"Die Luft wird klarer.",fog:"Modriger Dunst zieht durch die Gänge."}[nw]:
-          {clear:"Der Himmel klart auf.",rain:"Regen zieht auf.",snow:"Schnee beginnt zu fallen.",
-           fog:"Dichter Nebel legt sich über das Land."}[nw],"sys");}
+          {clear:"Der Himmel klart auf.",rain:"Regen zieht auf.",storm:"Ein Gewitter zieht heran.",
+           snow:"Schnee beginnt zu fallen.",fog:"Dichter Nebel legt sich über das Land."}[nw],"sys");}
+    }
+    if(this.wNext){this.wK-=dt/3;if(this.wK<=0){this.wK=0;this.weather=this.wNext;this.wNext=null;}}
+    else if(this.wK<1)this.wK=Math.min(1,this.wK+dt/4);
+    // Gewitter: Blitze in unregelmäßigen Abständen
+    if(this.bolt>0)this.bolt-=dt;
+    if(this.weather==="storm"&&!(this.biome&&this.biome.indoor)&&this.wK>.6){
+      this.boltT-=dt;
+      if(this.boltT<=0){this.boltT=rnd(5,13);this.bolt=.35;this.boltX=rnd(40,W-40);
+        setTimeout(()=>{if(SFX.on)SFX.noise(1.2,160,.5,.8);},rnd(150,700));}
     }
     if(this.blend<1){this.blend=Math.min(1,this.blend+dt/12.8);  // Biom-Überblendung, bewusst gemächlich
       if(this.blend>=1)this.prevBiome=null;}
@@ -3040,7 +3118,7 @@ class Game{
     this.stats.bestZone=Math.max(this.stats.bestZone,this.zone);
     this.props.length=0;
     this.dist=0;this.nextEncounter=rnd(80,150);
-    this.changeBiome(true);
+    this.changeBiome();
     UI.log("Du sitzt auf und überspringst "+fmt(m.skip)+" m. Zone "+this.zone+
       " \u2014 die Gegner hier sind deutlich stärker.","boss");
     this.fct.add(210,64,"+"+fmt(m.skip)+" m","crit");
@@ -3075,6 +3153,18 @@ class Game{
     }
     for(let i=0;i<count;i++){
       const e=new Enemy(h.level,isBoss,this.zone,isMini);
+      if(!e.boss&&UNLOCK[e.model]){              // neue Gegnerart in diesem Lauf: einmal ansagen
+        this.seenTypes=this.seenTypes||{};
+        if(!this.seenTypes[e.model]){
+          this.seenTypes[e.model]=true;
+          const U=UNLOCK[e.model],LB=lootBonus(U[0]);
+          if(U[0]>1){
+            UI.log("Neue Gegnerart: "+U[1]+" (ab Stufe "+U[0]+") \u2014 Beute: +"+Math.round((LB.item-1)*100)+
+              " % Fundchance, +"+Math.round(LB.mf)+" % Magiefund.","boss");
+            e.isNewType=true;
+          }
+        }
+      }
       if(count>1){
         // Gruppen treffen härter, halten aber einzeln weniger aus
         e.maxHp=Math.round(e.maxHp*.70);e.hp=e.maxHp;
@@ -3855,17 +3945,18 @@ class Game{
       UI.log("+"+sh+" Seelensplitter \u2014 dieser Lauf: "+h.shardsRun+".","loot");
     }
     // Loot
-    const chance=e.boss?1:e.mini?.85:clamp(.24+h.mf/500,0,.6);
+    const LB=lootBonus(e.lootLv);              // spätere Gegnerarten lassen mehr und Besseres fallen
+    const chance=e.boss?1:e.mini?.85:clamp((.24+h.mf/500)*LB.item,0,.7);
     if(Math.random()<chance){
       const n=e.boss?3:1;
       for(let i=0;i<n;i++){
-        const it=makeItem(h.level,null,e.boss&&i===0?(Math.random()<.12?3:2):null,h.mf);
+        const it=makeItem(h.level,null,e.boss&&i===0?(Math.random()<.12?3:2):null,h.mf+LB.mf);
         this.dropItem(it,cx+rnd(-20,20));
       }
     }
-    if(Math.random()<(e.boss?.15:.017))this.dropGem(cx);
+    if(Math.random()<(e.boss?.15:.017*LB.gem))this.dropGem(cx);
     // Runen und Zauber: so selten wie das Beste, das die Welt hergibt
-    if(h.level>=4&&Math.random()<(e.boss?.05:.0013)*(1+h.mf/100)){
+    if(h.level>=4&&Math.random()<(e.boss?.05:.0013*LB.rune)*(1+h.mf/100)){
       const rn=makeRune(h.level);
       h.bag.push(rn);rn.isNew=true;
       this.parts.ring(cx,GROUND-50,"#ffd166");
@@ -3884,7 +3975,7 @@ class Game{
       this.bossMarks.push({d:Math.round(this.totalDist),n:e.name,lvl:e.level,zone:this.zone});
       if(!h.mount)this.grantMount();          // der erste Boss bringt das Reittier
       this.zone++;this.stats.bestZone=Math.max(this.stats.bestZone,this.zone);
-      this.changeBiome(true);
+      this.changeBiome();
       UI.log("Zone "+this.zone+" erreicht. Die Gegner werden stärker.","lvl");}
     this.checkLevel();
     // Sieg erst, wenn die gesamte Gruppe gefallen ist
@@ -3973,7 +4064,7 @@ class Game{
     };
     // Der Töter wird separat gemerkt, damit er auch dann zu sehen ist,
     // wenn die Bildkopie am Browser scheitert.
-    this.deathFoe=foe?{model:foe.model,hue:foe.hue,boss:!!foe.boss,mini:!!foe.mini,
+    this.deathFoe=foe?{model:foe.model,hue:foe.hue,vfx:foe.vfx||null,boss:!!foe.boss,mini:!!foe.mini,
       name:foe.name,level:foe.level,affix:foe.affix?foe.affix.d:null,
       hpMax:foe.maxHp,dmg:foe.dmg}:null;
     this.render();
@@ -4291,25 +4382,45 @@ class Game{
         c.beginPath();c.moveTo(x+w/2,base-h);c.lineTo(x+w+3,base-h*.58);
         c.lineTo(x+w/2,base-h*.58);c.closePath();c.fill();
         c.fillStyle="rgba(0,0,0,.42)";                   // Tür
-        c.fillRect(x+w*.12,base-h*.30,w*.20,h*.30);
+        c.fillRect(Math.round(x+w*.12),Math.round(base-h*.30),Math.round(w*.20),Math.round(h*.30));
         c.fillStyle=lightsOn?"rgba(255,206,120,.92)":"rgba(0,0,0,.35)";
-        c.fillRect(x+w*.45,base-h*.44,5,5);
-        if(w>34)c.fillRect(x+w*.66,base-h*.44,5,5);
+        c.fillRect(Math.round(x+w*.45),Math.round(base-h*.44),5,5);
+        if(w>34)c.fillRect(Math.round(x+w*.66),Math.round(base-h*.44),5,5);
         if(lightsOn){c.fillStyle="rgba(255,206,120,.18)";
           c.beginPath();c.arc(x+w*.47,base-h*.42,10,0,7);c.fill();}
         c.fillStyle=col;break;
-      case "city":                                      // Turm mit Spitzdach und Fensterreihen
-        c.fillRect(x,base-h,w,h);
-        c.fillStyle=S;c.fillRect(x+w*.66,base-h,w*.34,h);
+      case "city":{
+        /* Stadthaus: Fenster und Dach hängen nur am Gebäude selbst (Zufallswert v),
+           nicht an der Bildschirmposition — sonst blinken sie beim Vorbeiziehen. */
+        const hs=(a2,b2)=>{const q=Math.sin(v*997+a2*12.9898+b2*78.233)*43758.5453;return q-Math.floor(q);};
+        const top=Math.round(base-h),ww=Math.round(w),roof=Math.floor(v*3);
+        c.fillRect(x,top,ww,Math.round(h));
+        c.fillStyle=S;c.fillRect(x+Math.round(ww*.66),top,ww-Math.round(ww*.66),Math.round(h));
         c.fillStyle=col;
-        c.beginPath();c.moveTo(x-2,base-h);c.lineTo(x+w/2,base-h-w*.55);
-        c.lineTo(x+w+2,base-h);c.closePath();c.fill();
-        c.fillStyle=H;c.fillRect(x,base-h,2.5,h);        // Lichtkante links
-        c.fillStyle=lightsOn?"rgba(255,214,140,.85)":"rgba(0,0,0,.34)";
-        for(let yy=base-h+11;yy<base-7;yy+=12)
-          for(let xx=x+4;xx<x+w-5;xx+=9)
-            if(((xx*7+yy*13)%5)<3)c.fillRect(xx,yy,3.5,5);
-        c.fillStyle=col;break;
+        if(roof===0){                                     // Spitzdach mit Wimpel
+          c.beginPath();c.moveTo(x-2,top);c.lineTo(x+ww/2,top-Math.round(ww*.55));c.lineTo(x+ww+2,top);c.closePath();c.fill();
+          if(v>.2){c.fillStyle="rgba(190,60,80,.85)";c.fillRect(Math.round(x+ww/2),top-Math.round(ww*.55)-6,1,6);
+            c.fillRect(Math.round(x+ww/2)+1,top-Math.round(ww*.55)-6,4,2);}
+        }else if(roof===1){                               // flaches Dach mit Zinnen
+          c.fillRect(x-1,top-2,ww+2,2);
+          for(let xx=x;xx<x+ww-2;xx+=6)c.fillRect(xx,top-5,3,3);
+        }else{                                            // Kuppel
+          c.beginPath();c.arc(x+ww/2,top,ww/2,Math.PI,0);c.fill();
+          c.fillStyle=H;c.fillRect(Math.round(x+ww/2)-1,top-Math.round(ww/2)-4,2,4);
+        }
+        c.fillStyle=H;c.fillRect(x,top,2,Math.round(h));     // Lichtkante links
+        // Fensterraster: feste Spalten und Reihen, je Gebäude festgelegt
+        const cols=Math.max(1,Math.floor((ww-6)/8)),rows=Math.max(1,Math.floor((h-14)/11));
+        const x0=x+Math.round((ww-cols*8+5)/2);
+        for(let r2=0;r2<rows;r2++)for(let c2=0;c2<cols;c2++){
+          const wx=x0+c2*8,wy=top+9+r2*11,q=hs(c2,r2);
+          if(q<.18)continue;                              // hier ist Mauer statt Fenster
+          if(lightsOn&&q>.45){c.fillStyle="rgba(255,214,140,.9)";c.fillRect(wx,wy,3,5);
+            c.fillStyle="rgba(255,214,140,.16)";c.fillRect(wx-1,wy-1,5,7);}
+          else{c.fillStyle="rgba(10,12,30,.45)";c.fillRect(wx,wy,3,5);
+            if(!lightsOn){c.fillStyle="rgba(190,215,255,.35)";c.fillRect(wx,wy,1,1);}}   // Glasglanz am Tag
+        }
+        c.fillStyle=col;break;}
       case "castle":                                    // Wehrmauer, Türme, Banner
         c.fillRect(x,base-h*.58,w,h*.58);
         for(let xx=x;xx<x+w-5;xx+=11)c.fillRect(xx,base-h*.58-6,7,6);
@@ -4406,7 +4517,7 @@ class Game{
       c.fillStyle=col;
       for(let r=-1;r<=1;r++){
         for(const m of L.r){
-          const x=m.x-off+r*W;
+          const x=Math.round(m.x-off+r*W);   // ganze Pixel: kein Kantenflimmern unter den Scanlines
           if(x>W+80||x<-140)continue;
           this.drawShape(c,L.t,x,base,m.w,m.h,col,hi,m.v,lightsOn,"rgba(0,0,0,.26)");
           c.fillStyle=col;
@@ -4695,7 +4806,7 @@ class Game{
     const floaty=(["geist","gespenst","astral","elementar","flying"].indexOf(e.model)>=0?
       Math.round(Math.sin(this.time*2.4)*3)-6:0)+Math.round(e.oy||0);
     drawSprite(c,sp,x,GROUND-bob+floaty,e.scale,pal,true,e.flash>0?"#ffffff":null,
-      e.model==="gespenst"||e.model==="geist"?.78:1,e.enraged?0:e.hue);
+      e.model==="gespenst"||e.model==="geist"?.78:1,e.enraged?0:e.hue,e.enraged?null:e.vfx);
     if(e.shield>0){                    // Schildblase, wird mit dem Schild schwächer
       const k=e.shield/e.shieldMax,cy=GROUND-e.ph*.5+floaty;
       const art=ASSETS.affix_shielded;
@@ -4751,6 +4862,11 @@ class Game{
     c.fillStyle=e.enraged?"#ff3b3b":e.boss?"#ff7ad9":e.mini?"#ffb347":"#ff5566";
     c.fillRect(x-bw/2,top,bw*e.hpPct,e.boss?5:e.mini?4:3);
     c.fillStyle="rgba(255,255,255,.25)";c.fillRect(x-bw/2,top,bw*e.hpPct,1);
+    if(e.isNewType&&!e.boss&&!e.mini){
+      c.font="700 7px 'Courier New',monospace";c.textAlign="center";
+      c.fillStyle="#000";c.fillText("NEU",x+1,top-3);c.fillStyle="#ffd166";c.fillText("NEU",x,top-4);
+      c.textAlign="left";
+    }
     if(e.boss||e.mini){
       c.font="700 8px 'Courier New',monospace";c.textAlign="center";
       c.fillStyle="#000";c.fillText(e.name,x+1,top-4);
@@ -4772,8 +4888,9 @@ class Game{
         col:"rgba(220,240,255,.8)",size:1,g:150});
     if(this.weather==="clear")return;
     if(b.indoor&&this.weather!=="fog")return;
+    const wk=this.wK;if(wk<=0)return;
     if(this.weather==="fog"){
-      c.globalAlpha=.16;
+      c.globalAlpha=.16*wk;
       for(let i=0;i<5;i++){
         const y=90+i*28,off=(this.time*(8+i*4)+i*130)%(W+180)-90;
         c.fillStyle="#cfd6ff";c.fillRect(off,y,150,10);
@@ -4781,15 +4898,25 @@ class Game{
       }
       c.globalAlpha=1;return;
     }
-    const rain=this.weather==="rain";
-    c.strokeStyle=rain?"rgba(150,190,255,.5)":"rgba(255,255,255,.75)";
+    const storm=this.weather==="storm",rain=this.weather==="rain"||storm;
+    // Blitz: kurzer Zacken am Himmel und helles Aufleuchten
+    if(storm&&this.bolt>0){
+      const a=this.bolt/.35;
+      c.save();c.fillStyle="rgba(220,230,255,"+(.28*a)+")";c.fillRect(0,0,W,H);
+      if(a>.5){c.strokeStyle="rgba(255,255,255,"+a+")";c.lineWidth=1.5;c.beginPath();
+        let lx=this.boltX,ly=0;c.moveTo(lx,ly);
+        let sd=this.boltX;for(let i=0;i<7;i++){sd=(sd*9301+49297)%233280;lx+=(sd/233280-.5)*22;ly+=22;c.lineTo(lx,ly);}
+        c.stroke();}
+      c.restore();
+    }
+    c.strokeStyle=rain?"rgba(150,190,255,"+(storm?.6:.5)+")":"rgba(255,255,255,.75)";
     c.lineWidth=1;
-    const n=rain?70:52;
+    const n=Math.round((storm?110:rain?70:52)*wk);
     for(let i=0;i<n;i++){
       const seed=i*37.7;
-      const spd=rain?420:70;
+      const spd=storm?520:rain?420:70;
       const y=((this.time*spd+seed*13)%(H+40))-20;
-      const x=((seed*29)+(rain?y*.35:Math.sin(this.time*1.2+i)*16))%W;
+      const x=((seed*29)+(rain?y*(storm?.55:.35):Math.sin(this.time*1.2+i)*16))%W;
       if(rain){c.beginPath();c.moveTo(x,y);c.lineTo(x-2,y+7);c.stroke();}
       else{c.fillStyle="rgba(255,255,255,.8)";c.fillRect(x,y,2,2);}
     }
@@ -4803,7 +4930,8 @@ class Game{
     }
     const night=b.indoor?0:clamp((this.dayT<.5?(.20-this.dayT)/.20:(this.dayT-.80)/.20),0,1);
     if(night>0){c.fillStyle="rgba(24,20,58,"+(night*.42)+")";c.fillRect(0,0,W,H);}
-    if(this.weather==="rain"){c.fillStyle="rgba(20,28,60,.18)";c.fillRect(0,0,W,H);}
+    if((this.weather==="rain"||this.weather==="storm")&&!b.indoor){
+      c.fillStyle="rgba(20,28,60,"+((this.weather==="storm"?.28:.18)*this.wK)+")";c.fillRect(0,0,W,H);}
     if(this.lootGlow>0){c.fillStyle="rgba(139,233,253,"+(this.lootGlow*.12)+")";c.fillRect(0,0,W,H);}
     if(this.hero&&this.hero.boons&&this.hero.boons.length){
       // Farbiger Randschimmer in der Farbe des jüngsten Segens
@@ -4872,7 +5000,7 @@ class Game{
   drawHud(c){
     c.font="8px 'Courier New',monospace";
     const t=["Nacht","Morgen","Tag","Abend"][this.dayT<.16?0:this.dayT<.30?1:this.dayT<.72?2:this.dayT<.88?3:0];
-    const wt={clear:"Klar",rain:"Regen",snow:"Schnee",fog:"Nebel"}[this.weather];
+    const wt={clear:"Klar",rain:"Regen",storm:"Gewitter",snow:"Schnee",fog:"Nebel"}[this.weather];
     if(this.hero&&this.hero.boons.length){       // laufende Segen unten links
       let bx=6;
       for(const b of this.hero.boons){
@@ -4908,7 +5036,8 @@ class Game{
   async save(){
     await Store.set("ad_meta",{meta:this.meta,shards:this.shards,stats:this.stats,
       heirlooms:this.heirlooms,heirGems:this.heirGems,heirGold:this.heirGold,
-      heirAttr:this.heirAttr,graves:this.graves});
+      heirAttr:this.heirAttr,graves:this.graves,
+      world:{biome:this.biome&&this.biome.k,left:this.biomeLeft,dayT:this.dayT,weather:this.weather}});
     if(this.hero&&this.state!=="dead"){
       await Store.set("ad_run",{
         hero:{name:this.hero.name,race:this.hero.race,cls:this.hero.cls,level:this.hero.level,
@@ -4938,7 +5067,12 @@ class Game{
     if(m){this.meta=m.meta||{};this.shards=m.shards||0;
       this.stats=Object.assign(this.stats,m.stats||{});this.heirlooms=m.heirlooms||[];
       this.heirGems=m.heirGems||[];this.heirGold=m.heirGold||0;this.heirAttr=m.heirAttr||null;
-      this.graves=m.graves||[];}
+      this.graves=m.graves||[];
+      // Welt fortsetzen: gleiche Umgebung, Tageszeit und Wetter wie beim letzten Mal
+      const w=m.world,b=w&&BIOMES.find(x=>x.k===w.biome);
+      if(b&&w.left>0){this.biome=b;this.biomeLeft=w.left;this.layers=this.buildLayers();
+        if(typeof w.dayT==="number")this.dayT=w.dayT;
+        if(w.weather&&(!b.indoor||w.weather==="fog"||w.weather==="clear"))this.weather=w.weather;}}
   }
   async loadRun(){
     const r=await Store.get("ad_run");
@@ -5154,7 +5288,11 @@ const UI={
       row("Seelensplitter gefunden","\u2726 "+(h.shardsRun||0))+
       row("Vorrat der Ahnenhalle","\u2726 "+G.shards)+
       row("Zurückgelegter Weg",fmt(Math.round(G.totalDist))+" m")+
-      row("Aktueller Ort",G.biome?G.biome.n:"—");
+      row("Aktueller Ort",G.biome?G.biome.n:"—")+
+      (()=>{const known=Object.values(UNLOCK).filter(u=>u[0]<=h.level).length,all=Object.keys(UNLOCK).length;
+        const next=Object.values(UNLOCK).filter(u=>u[0]>h.level).sort((a,b)=>a[0]-b[0])[0];
+        return row("Gegnerarten",known+" / "+all)+
+          (next?row("Nächste Gegnerart",next[1]+" ab Stufe "+next[0]):row("Nächste Gegnerart","alle erschienen"));})();
     html+='<div class="h3">Attribute'+(h.attrPts>0?' \u2014 '+h.attrPts+' Punkte frei':"")+'</div>';
     const attrs=[["str","Stärke","Schaden für Krieger und Paladin, Traglast schwerer Beute"],
                  ["dex","Geschick","Angriffstempo, kritische Chance, Bögen und Dolche"],
@@ -6555,7 +6693,7 @@ const UI={
     const u=(H2-14)/sp.base;                 // auf die Kachelhöhe einpassen
     ctx.globalAlpha=.3;ctx.fillStyle="#000";
     ctx.beginPath();ctx.ellipse(W2/2,H2-6,sp.w*u*.4,4,0,0,7);ctx.fill();ctx.globalAlpha=1;
-    drawSprite(ctx,sp,W2/2,H2-6,u*sp.f,pal,true,null,1,foe.hue);
+    drawSprite(ctx,sp,W2/2,H2-6,u*sp.f,pal,true,null,1,foe.hue,foe.vfx);
     ctx.setTransform(1,0,0,1,0,0);
   },
   /** Weg-Strahl: wie weit dieser Held kam und wo alle Vorgänger gefallen sind */
