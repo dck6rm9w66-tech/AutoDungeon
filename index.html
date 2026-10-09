@@ -162,7 +162,22 @@ body:not(.nofa) svg.slotico{display:none}
 .cell.r3{border-color:#a55f1c;box-shadow:0 0 14px rgba(255,154,60,.42)}
 .cell .upnum{position:absolute;bottom:1px;left:4px;font-size:9px;font-weight:700;
   color:var(--gold);text-shadow:0 0 4px rgba(0,0,0,.9)}
-.cell .sock{position:absolute;top:2px;right:3px;font-size:8px;color:var(--acc2);letter-spacing:-1px}
+/* Sockel: echte Punkte, freie leuchten türkis, belegte in der Farbe des Steins */
+.sdot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin:0 1px;
+  border:1.5px solid var(--acc2);background:rgba(10,8,18,.85);box-shadow:0 0 4px rgba(139,233,253,.6)}
+.sdot.f{border-color:rgba(255,255,255,.85);box-shadow:0 0 5px rgba(255,255,255,.35)}
+.cell .sock{position:absolute;top:3px;right:3px;display:grid;grid-auto-flow:column;
+  grid-template-rows:repeat(3,9px);gap:2px;line-height:0;direction:rtl;
+  padding:2px;border-radius:7px;background:rgba(10,8,18,.55)}
+.cell .sock .sdot{width:9px;height:9px;margin:0}
+.cell .sock.open .sdot:not(.f){animation:sockglow 1.6s ease-in-out infinite}
+@keyframes sockglow{50%{box-shadow:0 0 8px var(--acc2);background:rgba(139,233,253,.25)}}
+@media (prefers-reduced-motion:reduce){.cell .sock.open .sdot{animation:none}}
+.socklist{margin:6px 0;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#15131f;font-size:12px}
+.socklist .sockhd{color:var(--acc2);margin-bottom:4px}
+.sockrow{display:flex;gap:7px;align-items:flex-start;padding:2px 0}
+.sockrow .sdot{margin-top:3px;flex:0 0 auto}
+.sok{color:var(--good)}.sno{color:var(--dim)}
 .cell.socketing{animation:pulse 1s infinite}
 @keyframes pulse{50%{box-shadow:0 0 16px var(--acc2)}}
 .gemrow{display:flex;gap:7px;flex-wrap:wrap}
@@ -214,6 +229,13 @@ body:not(.nofa) svg.slotico{display:none}
   background:var(--acc2);box-shadow:0 0 7px var(--acc2)}
 .cell.picked{border-color:var(--acc)!important;box-shadow:0 0 0 2px var(--acc) inset,0 0 14px rgba(189,147,249,.5)!important}
 .node.picked{outline:2px solid var(--acc2);outline-offset:2px}
+.cell.consecrated{border-color:#ffd166!important;box-shadow:0 0 0 2px #ffd166 inset,0 0 18px rgba(255,209,102,.6)!important}
+.cell .holy{position:absolute;top:1px;left:4px;font-size:11px;color:#ffd166;text-shadow:0 0 6px #ffb02e}
+.consec{background:linear-gradient(180deg,#2a2236,#1b1726);border:1px solid #5a4a1e;border-radius:12px;
+  padding:10px 12px;margin-top:8px}
+.consec .ctitle{color:#ffd166;font-weight:700;letter-spacing:1px}
+.consec .ceff{color:var(--acc2);font-size:12px;margin-top:6px}
+.consec.done{border-color:#ffd166;box-shadow:0 0 18px rgba(255,209,102,.35)}
 .branchhead{position:absolute;top:0;transform:translateX(-50%);text-align:center;width:112px}
 .branchhead b{font-size:12px;color:var(--acc)}
 .branchhead small{display:block;color:var(--dim);font-size:9.5px;line-height:1.25}
@@ -314,6 +336,11 @@ body:not(.nofa) svg.slotico{display:none}
   justify-content:center;font-size:17px;flex:0 0 auto}
 .offer .meta{flex:1;min-width:0}
 .offer .meta div:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.offer.stack{flex-wrap:wrap}
+.offer.stack .meta{flex:1 1 170px}
+.offer.stack .meta div:first-child{white-space:normal}
+.offer.stack .acts{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;justify-content:flex-end}
+.offer.stack .acts .btn{padding:7px 10px}
 .offer small{color:var(--muted)}
 .upg{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:8px 10px;margin-bottom:7px}
 .upg .hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
@@ -374,7 +401,10 @@ body:not(.nofa) svg.slotico{display:none}
 .ahn .relic{display:flex;align-items:center;gap:8px;background:#15131f;border:1px solid var(--line);
   border-radius:10px;padding:6px 8px;font-size:11.5px}
 .ahn .relic img{width:26px;height:26px;image-rendering:pixelated;flex:0 0 auto}
-.ahn .relic .rtxt{flex:1;min-width:0}
+.ahn .relic{flex-wrap:wrap}
+.ahn .relic .rtxt{flex:1 1 120px;min-width:0}
+.ahn .releff{font-size:11.5px;color:var(--acc2);margin:5px 2px 0;line-height:1.45}
+.ahn .releff.off{color:var(--dim)}
 .ahn .relic .rtxt div:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ahnhead{background:var(--panel2);border:1px solid var(--line);border-radius:12px;
   padding:10px 12px;margin-bottom:11px}
@@ -555,6 +585,15 @@ class AudioEngine{
   buy(){this.tone(760,1140,.09,"square",.28);this.tone(1140,1520,.09,"square",.2,.07);}
   socket(){this.tone(1400,2100,.07,"sine",.3);this.tone(2100,2600,.09,"sine",.22,.06);}
   skill(){this.tone(440,880,.12,"triangle",.3);this.tone(880,1320,.12,"triangle",.22,.08);}
+  // Zauber: Abschuss und Einschlag klingen getrennt
+  whoosh(){this.noise(.22,700,.45,1.2);this.tone(300,620,.18,"triangle",.18);}
+  boom(){this.noise(.38,320,1.1,1);this.tone(140,45,.32,"sawtooth",.45);}
+  zap(){this.noise(.18,5200,.7,3);this.tone(1900,600,.14,"square",.22);this.tone(2400,900,.1,"square",.16,.05);}
+  frost(){this.noise(.4,6200,.5,8);[1568,2093,2637].forEach((f,i)=>this.tone(f,f*1.02,.18,"sine",.16,i*.05));}
+  heal(){[523,784,1046,1568].forEach((f,i)=>this.tone(f,f,.22,"sine",.2,i*.06));}
+  drain(){this.tone(620,180,.34,"sawtooth",.22);this.tone(310,90,.34,"triangle",.2,.04);}
+  venom(){this.noise(.5,420,.5,2);this.tone(160,120,.4,"triangle",.2);}
+  meteor(){this.tone(900,120,.6,"sawtooth",.22);this.noise(.6,1200,.35,1);}
 }
 const SFX=new AudioEngine();
 
@@ -1143,6 +1182,9 @@ function drawSprite(ctx,sp,cx,groundY,scale,pal,flip,flash,alpha,hue){
 class Particles{
   constructor(){this.p=[];}
   add(x,y,n,cfg){
+    // Obergrenze: bei Effektgewittern lieber Partikel weglassen als Bilder verlieren
+    if(this.p.length>1400)return;
+    if(this.p.length>900)n=Math.ceil(n/3);
     for(let i=0;i<n;i++){
       const a=cfg.dir!==undefined?cfg.dir+rnd(-cfg.spread,cfg.spread):rnd(0,Math.PI*2);
       const s=rnd(cfg.spdMin,cfg.spdMax);
@@ -1204,6 +1246,124 @@ class FloatTexts{
   }
 }
 
+/* ----------------------------------------------------------------------------
+   Zauber-Effekte: Geschosse, Kettenblitze, Wellen, Lichtsäulen, Explosionen.
+   Geschosse tragen ihre Wirkung als Rückruf und lösen sie erst beim Einschlag
+   aus — der Schaden kommt also genau dann, wenn man den Treffer sieht.
+   -------------------------------------------------------------------------- */
+class SpellFx{
+  constructor(parts){this.f=[];this.parts=parts;}
+  /** Geschoss von (x,y) zum Ziel; tgt ist ein Gegner oder {x,y} */
+  shot(x,y,tgt,o){
+    this.f.push(Object.assign({k:"shot",x,y,sx:x,sy:y,tgt,spd:300,r:4,col:"#ff7a2b",core:"#fff3b0",
+      arc:0,t:0,trail:"fire"},o));
+  }
+  chain(points,col){this.f.push({k:"chain",pts:points,col,t:0,max:.45,seed:Math.random()*99});}
+  nova(x,y,col,maxR){this.f.push({k:"nova",x,y,col,t:0,max:.55,maxR:maxR||300});}
+  pillar(x,col){this.f.push({k:"pillar",x,col,t:0,max:.7});}
+  flare(x,y,col,r,max){this.f.push({k:"flare",x,y,col,r:r||20,t:0,max:max||.32});}
+  cloud(x,y,col,max){this.f.push({k:"cloud",x,y,col,t:0,max:max||3});}
+  update(dt){
+    for(let i=this.f.length-1;i>=0;i--){
+      const f=this.f[i];f.t+=dt;
+      if(f.k==="shot"){
+        const tx=f.tgt.x,ty=f.tgt.y!==undefined?f.tgt.y:GROUND-(f.tgt.ph||30)*.55;
+        const dx=tx-f.x,dy=ty-f.y,d=Math.hypot(dx,dy);
+        const step=f.spd*dt;
+        // Schweif
+        if(f.trail==="fire")this.parts.add(f.x,f.y,2,{spdMin:5,spdMax:30,lifeMin:.15,lifeMax:.4,
+          col:()=>pick(["#ffd166","#ff7a2b","#ff4d1a","#fff3b0"]),size:2,g:-60,glow:1});
+        else if(f.trail==="dark")this.parts.add(f.x,f.y,2,{spdMin:4,spdMax:20,lifeMin:.2,lifeMax:.45,
+          col:()=>pick([f.col,"#3b1f5c","#e0c6ff"]),size:2,g:-20,glow:1});
+        else if(f.trail==="blood")this.parts.add(f.x,f.y,1,{spdMin:2,spdMax:12,lifeMin:.12,lifeMax:.3,
+          col:f.col,size:1,g:0,glow:1});
+        else if(f.trail==="thorn")this.parts.add(f.x,f.y,1,{spdMin:2,spdMax:10,lifeMin:.1,lifeMax:.22,
+          col:"#a3d977",size:1,g:0});
+        else if(f.trail==="meteor")this.parts.add(f.x,f.y,4,{spdMin:10,spdMax:50,lifeMin:.2,lifeMax:.6,
+          col:()=>pick(["#ffd166","#ff7a2b","#ff3b1a","#6b3a1e","#fff3b0"]),size:3,g:-30,glow:1});
+        if(d<=step||f.t>2){
+          this.f.splice(i,1);
+          if(f.onHit)f.onHit(tx,ty);
+          continue;
+        }
+        f.x+=dx/d*step;f.y+=dy/d*step;
+        // leichter Bogen, je nach Strecke
+        if(f.arc){const k=1-d/Math.max(1,Math.hypot(tx-f.sx,ty-f.sy));f.y-=Math.sin(k*Math.PI)*f.arc*dt*6;}
+      }else if(f.k==="cloud"){
+        if(Math.random()<.6)this.parts.add(f.x+rnd(-22,22),f.y+rnd(-14,10),1,{spdMin:2,spdMax:12,
+          lifeMin:.5,lifeMax:1.1,col:pick([f.col,"#2f6b2a","#c6ff8a"]),size:3,g:-14});
+        if(f.t>=f.max)this.f.splice(i,1);
+      }else if(f.t>=f.max)this.f.splice(i,1);
+    }
+  }
+  draw(c){
+    for(const f of this.f){
+      if(f.k==="shot"){
+        c.save();c.shadowBlur=f.r*3;c.shadowColor=f.col;
+        const pulse=1+Math.sin(f.t*40)*.15;
+        c.fillStyle=f.col;c.beginPath();c.arc(f.x,f.y,f.r*1.5*pulse,0,7);c.fill();
+        c.fillStyle=f.core;c.beginPath();c.arc(f.x,f.y,f.r*.75,0,7);c.fill();
+        c.restore();
+      }else if(f.k==="chain"){
+        const a=1-f.t/f.max;
+        // Blitz flackert: alle 40 ms neue Zacken
+        let s=f.seed+Math.floor(f.t*25)*7.3;
+        const jit=()=>{s=(s*9301+49297)%233280;return s/233280-.5;};
+        c.save();c.globalAlpha=clamp(a*1.6,0,1);c.lineJoin="round";
+        for(const pass of [[4,f.col,12],[1.5,"#ffffff",0]]){
+          c.lineWidth=pass[0];c.strokeStyle=pass[1];c.shadowBlur=pass[2];c.shadowColor=f.col;
+          s=f.seed+Math.floor(f.t*25)*7.3;
+          c.beginPath();
+          for(let p=0;p<f.pts.length-1;p++){
+            const A=f.pts[p],B=f.pts[p+1];
+            if(p===0)c.moveTo(A.x,A.y);
+            const n=7;
+            for(let j=1;j<=n;j++){
+              const k=j/n;
+              const off=j===n?0:jit()*16;
+              c.lineTo(A.x+(B.x-A.x)*k,A.y+(B.y-A.y)*k+off);
+            }
+          }
+          c.stroke();
+        }
+        c.restore();
+      }else if(f.k==="nova"){
+        const k=f.t/f.max,r=8+k*f.maxR;
+        c.save();c.globalAlpha=(1-k)*.85;c.strokeStyle=f.col;c.shadowBlur=10;c.shadowColor=f.col;
+        c.lineWidth=5*(1-k)+1;
+        c.beginPath();c.ellipse(f.x,GROUND-14,r,r*.32,0,0,7);c.stroke();
+        c.globalAlpha=(1-k)*.3;c.lineWidth=2;
+        c.beginPath();c.ellipse(f.x,GROUND-14,r*.7,r*.22,0,0,7);c.stroke();
+        c.restore();
+      }else if(f.k==="pillar"){
+        const k=f.t/f.max,a=Math.sin(k*Math.PI);
+        const w=10+a*14;
+        c.save();c.globalAlpha=a*.55;
+        const g=c.createLinearGradient(0,0,0,GROUND);
+        g.addColorStop(0,hexA(f.col,0));g.addColorStop(.6,hexA(f.col,.7));g.addColorStop(1,hexA("#ffffff",.9));
+        c.fillStyle=g;c.fillRect(f.x-w/2,0,w,GROUND);
+        c.globalAlpha=a*.9;c.fillStyle="#ffffff";c.fillRect(f.x-1,0,2,GROUND);
+        c.restore();
+      }else if(f.k==="flare"){
+        const k=f.t/f.max,r=f.r*(.4+k*.9);
+        c.save();c.globalAlpha=(1-k);
+        const g=c.createRadialGradient(f.x,f.y,0,f.x,f.y,r);
+        g.addColorStop(0,"rgba(255,255,255,.95)");g.addColorStop(.35,hexA(f.col,.85));g.addColorStop(1,hexA(f.col,0));
+        c.fillStyle=g;c.beginPath();c.arc(f.x,f.y,r,0,7);c.fill();
+        c.restore();
+      }else if(f.k==="cloud"){
+        const k=f.t/f.max,a=Math.min(1,f.t*4)*Math.min(1,(f.max-f.t)*2);
+        c.save();c.globalAlpha=.32*a;c.fillStyle=f.col;
+        for(let j=0;j<4;j++){
+          const ox=Math.sin(f.t*1.7+j*1.9)*14,oy=Math.cos(f.t*1.3+j*2.3)*5;
+          c.beginPath();c.ellipse(f.x+ox+(j-1.5)*9,f.y+oy,16,9,0,0,7);c.fill();
+        }
+        c.restore();
+      }
+    }
+  }
+}
+
 /* ============================================================================
    4. ITEMS, AFFIXE, EDELSTEINE
    ========================================================================== */
@@ -1211,8 +1371,8 @@ const RARITY=[
   // sockP = Wahrscheinlichkeit, dass das Stück überhaupt einen Sockel trägt
   {n:"Normal",c:"var(--r-0)",hex:"#b6b2c9",aff:0,mult:1.00,sock:1,sockP:.020},
   {n:"Magisch",c:"var(--r-1)",hex:"#5aa9ff",aff:2,mult:1.28,sock:2,sockP:.250},
-  {n:"Rar",c:"var(--r-2)",hex:"#f2e06a",aff:4,mult:1.62,sock:2,sockP:.850},
-  {n:"Legendär",c:"var(--r-3)",hex:"#ff9a3c",aff:5,mult:2.10,sock:3,sockP:1.00}
+  {n:"Rar",c:"var(--r-2)",hex:"#f2e06a",aff:4,mult:1.62,sock:3,sockP:.850},
+  {n:"Legendär",c:"var(--r-3)",hex:"#ff9a3c",aff:5,mult:2.10,sock:4,sockP:1.00}
 ];
 const SLOTS={
   weapon:{n:"Waffe",ico:"\u2694"}, offhand:{n:"Nebenhand",ico:"\u25D8"},
@@ -1316,7 +1476,9 @@ const RUNE_SPELLS=[
   {k:"bolt", n:"Kettenblitz", d:"trifft alle Gegner mit einem Blitz",    col:"#8be9fd"},
   {k:"frost",n:"Frostnova",   d:"verlangsamt alle Gegner",               col:"#9fd8ff"},
   {k:"heal", n:"Lebensquell", d:"heilt dich um einen Teil deines Lebens",col:"#5ce08a"},
-  {k:"drain",n:"Seelenraub",  d:"entzieht dem Ziel Leben",               col:"#c39bff"}
+  {k:"drain",n:"Seelenraub",  d:"entzieht dem Ziel Leben",               col:"#c39bff"},
+  {k:"meteor",n:"Meteor",rn:"des Meteors",d:"lässt einen Meteor auf das Ziel stürzen, der alle Gegner versengt",col:"#ff3b1a"},
+  {k:"venom",n:"Giftwolke",rn:"der Giftwolke",d:"hüllt alle Gegner in eine Giftwolke, die 4 Sekunden lang Schaden verursacht",col:"#7cd66a"}
 ];
 /* ----------------------------------------------------------------------------
    Ahnengalerie: Wer einem gefallenen Helden einen Gegenstand weiht, übernimmt
@@ -1328,10 +1490,14 @@ const RELIC_RATE=.6;
 function relicSlots(){
   return 1+((typeof G!=="undefined"&&G.meta&&G.meta.shrine)||0);
 }
-function relicBonuses(){
+/** Taugt ein Gegenstand als Weihgabe? Nur Legendäres; Zauberrunen nicht,
+    denn ihr Zauber hängt am Tragen und ließe sich nicht vererben. */
+function isRelicWorthy(it){return !!it&&it.rar===3&&!it.spell;}
+function relicBonuses(only){
   const out={stats:{},armor:0,dmgpct:0,uniq:{},skills:{},rune:{},n:0};
-  if(typeof G==="undefined"||!G.graves)return out;
-  for(const g of G.graves){
+  const list=only?[{relic:only,active:true}]:
+    (typeof G!=="undefined"&&G.graves)?G.graves:[];
+  for(const g of list){
     const it=g.relic;
     if(!it||!g.active)continue;
     out.n++;
@@ -1357,7 +1523,7 @@ function makeRune(level){
   if(spell){
     const sp=pick(RUNE_SPELLS);
     it.spell={k:sp.k,chance:ri(8,20),power:Math.round((10+level*3.2)*rnd(.8,1.4)),col:sp.col};
-    it.name=pick(RUNE_WORDS)+"-Rune des "+sp.n;
+    it.name=pick(RUNE_WORDS)+"-Rune "+(sp.rn||"des "+sp.n);
     it.uniqTxt=it.spell.chance+" % Chance je Treffer: "+sp.d+".";
   }else{
     const a=pick(RUNE_PASSIVE);
@@ -1467,6 +1633,18 @@ function iname(it){return it.name+((it.up)?" +"+it.up:"");}
    einzelnen gegen Seelensplitter eine Güte anheben. */
 function mergeCost(q,lvl){return Math.round(40+q*38+(lvl||1)*8);}
 function refineCost(q){return 3+q*2;}
+const MAX_SOCKETS=5;
+/** Herauslösen eines Steins: wertvollere Steine kosten mehr */
+function gemRemoveCost(q){return Math.round(15*Math.pow(q+1,1.4));}
+/** Sockel bohren: jeder vorhandene Sockel verdoppelt grob den Preis */
+function drillCost(it){return Math.round((90+it.lvl*14)*Math.pow(2.1,it.sockets.length)*(1+it.rar*.15));}
+/** Sockel als kleine farbige Punkte (für Listen) */
+function socketDots(it){
+  return it.sockets.map(g=>{
+    if(!g)return '<i class="sdot"></i>';
+    return '<i class="sdot f" style="background:'+parseGem(g).col+'"></i>';
+  }).join("");
+}
 function itemScore(it){
   if(!it)return 0;const s=itemStats(it);let v=0;
   if(it.dmax)v+=(it.dmin+it.dmax)/2*3;
@@ -1518,7 +1696,9 @@ const ENEMY_AFFIXES=[
   {k:"frozen",n:"Eisiger",hue:195,hp:1.1,dm:1.0,d:"verlangsamt"},
   {k:"cursed",n:"Verfluchter",hue:280,hp:1.0,dm:1.3,d:"verstärkter Schaden"},
   {k:"golden",n:"Goldener",hue:45,hp:.7,dm:.8,d:"reiche Beute"},
-  {k:"ancient",n:"Uralter",hue:170,hp:1.45,dm:1.1,d:"gewährt viel Erfahrung"}
+  {k:"ancient",n:"Uralter",hue:170,hp:1.45,dm:1.1,d:"gewährt viel Erfahrung"},
+  {k:"shielded",n:"Geschirmter",hue:230,hp:1.0,dm:.95,d:"trägt einen Schutzschild, der Schaden schluckt"},
+  {k:"explosive",n:"Berstender",hue:5,hp:.9,dm:1.0,d:"explodiert beim Tod"}
 ];
 
 /* ============================================================================
@@ -1880,7 +2060,7 @@ class Enemy extends Entity{
       let hpM=b.hp,dmM=b.dm;
       this.name=v[0];
       if(level>=6&&Math.random()<clamp(.10+level*.012,0,.55)){
-        const a=pick(level<14?ENEMY_AFFIXES.filter(x=>["giant","ancient","armored"].indexOf(x.k)<0):ENEMY_AFFIXES);
+        const a=pick(level<14?ENEMY_AFFIXES.filter(x=>["giant","ancient","armored","shielded","explosive"].indexOf(x.k)<0):ENEMY_AFFIXES);
         this.affix=a;this.name=a.n+" "+v[0];
         hpM*=a.hp;dmM*=a.dm;this.hue=Math.round(lerp(this.hue,a.hue,.65));
         if(a.k==="giant")this.scale=Math.round(this.scale*1.55);
@@ -1902,6 +2082,9 @@ class Enemy extends Entity{
       }
     }
     this.hp=this.maxHp;this.pal=palette(this.hue,this.boss?48:40);
+    // Schild schluckt ein Drittel des Lebens, bevor echter Schaden durchgeht
+    this.shield=(this.affix&&this.affix.k==="shielded")?Math.round(this.maxHp*.35):0;
+    this.shieldMax=this.shield;
     this.sp=SPRITES[this.model];
   }
 }
@@ -1967,14 +2150,13 @@ class Game{
     this.cv=$("game");this.ctx=this.cv.getContext("2d");
     this.ctx.imageSmoothingEnabled=false;
     this.res=this.cv.width/W;               // Geräte-Pixel je logischem Pixel
-    this.parts=new Particles();this.fct=new FloatTexts();
+    this.parts=new Particles();this.fct=new FloatTexts();this.spells=new SpellFx(this.parts);
     this.shake=0;this.shakeMag=0;this.time=0;this.dayT=.25;
     this.scroll=0;this.state="idle";this.hero=null;this.enemy=null;this.enemies=[];
     this.zone=1;this.dist=0;this.nextEncounter=170;
     this.weather="clear";this.weatherT=0;this.drops=[];
     this.meta={};this.shards=0;this.heirlooms=[];this.heirGems=[];this.heirGold=0;this.heirAttr=null;
     this.bossMarks=[];
-    this.mountLegacy=null;
     this.graves=[];this.totalDist=0;
     this.stats={runs:0,bestLevel:0,bestZone:1,kills:0,bosses:0};
     this.biome=BIOMES[0];this.biomeLeft=6;this.prevBiome=null;this.blend=1;
@@ -2055,14 +2237,13 @@ class Game{
   /* ---------- Run-Steuerung ---------- */
   startRun(name,race,cls){
     this.hero=new Hero(name,race,cls,this.meta);
-    if(this.mountLegacy)this.hero.mount=JSON.parse(JSON.stringify(this.mountLegacy));
     this.hero.gold=Math.round(30*(1+(this.meta.gold||0)*.15));
     this.hero.equip.weapon=makeItem(1,"weapon",1,0);this.hero.recompute();this.hero.hp=this.hero.maxHp;
     if(this.meta.gemcutter)for(let i=0;i<2;i++)this.hero.gems.push(gemId(pick(GEMS).k,rollGemQuality(1)));
     // Das Vermächtnis: ohne Erbe kommt kaum ein Held tief
     for(const it of this.heirlooms){
       const c=JSON.parse(JSON.stringify(it));c.id=ITEM_ID++;c.isNew=true;
-      if(this.meta.bloodline&&c.sockets.length<3)c.sockets.push(null);
+      if(this.meta.bloodline&&c.sockets.length<5)c.sockets.push(null);
       this.hero.bag.push(c);
     }
     if(this.heirAttr){
@@ -2127,7 +2308,7 @@ class Game{
     }
     if(this.blend<1){this.blend=Math.min(1,this.blend+dt/12.8);  // Biom-Überblendung, bewusst gemächlich
       if(this.blend>=1)this.prevBiome=null;}
-    this.parts.update(dt);this.fct.update(dt);
+    this.parts.update(dt);this.fct.update(dt);this.spells.update(dt);
     if(this.shake>0){this.shake-=dt;if(this.shake<0)this.shake=0;}
     if(this.lootGlow>0)this.lootGlow-=dt;
     if(this.flash&&this.flash.t>0)this.flash.t-=dt;
@@ -2142,7 +2323,10 @@ class Game{
       if(h.poisonTick>=1){h.poisonTick=0;this.damageHero(h.status.poisonDmg,"Gift",true);} }
     if(h.status.slow>0){h.status.slow-=dt;if(h.status.slow<=0)h.recompute();}
     // Regeneration (Unique / Trank-Automatik)
-    if(h.hasUniq("regen"))h.hp=Math.min(h.maxHp,h.hp+h.maxHp*.01*dt);
+    if(h.hasUniq("regen")){h.hp=Math.min(h.maxHp,h.hp+h.maxHp*.01*dt);
+      // Ewige Flamme: kleine Flammen züngeln am Helden
+      if(Math.random()<.18)this.parts.add(122+rnd(-8,8),GROUND-rnd(6,40),1,{dir:-Math.PI/2,spread:.3,
+        spdMin:10,spdMax:30,lifeMin:.3,lifeMax:.6,col:pick(["#ffd166","#ff7a2b"]),size:1,g:-30,glow:1});}
     if(h.regen)h.hp=Math.min(h.maxHp,h.hp+h.maxHp*h.regen/100*dt);
     if(this.mountCd>0)this.mountCd-=dt;
     if(this.rideT>0){                        // Ritt: der Boden fliegt vorbei
@@ -2225,6 +2409,18 @@ class Game{
     for(const e of this.enemies){
       if(e.flash>0)e.flash-=dt;
       if(e.lunge>0)e.lunge-=dt*4;
+      if(e.dead)continue;
+      // Giftwolke: Schaden in halben Sekunden
+      if(e.dot&&e.dot.t>0){
+        e.dot.t-=dt;e.dot.tick+=dt;
+        if(e.dot.tick>=.5){e.dot.tick-=.5;this.spellHit(e,e.dot.dps*.5,"dmg");}
+      }
+      // Frost: sichtbar vereist, solange die Verlangsamung wirkt
+      if(e.chill>0){
+        e.chill-=dt;
+        if(Math.random()<.25)this.parts.add(e.x+rnd(-e.pw*.35,e.pw*.35),GROUND-rnd(4,e.ph),1,
+          {spdMin:2,spdMax:10,lifeMin:.4,lifeMax:.8,col:pick(["#ffffff","#cfeaff"]),size:1,g:20,glow:1});
+      }
     }
     this.enemy=this.target();
     if(h.lunge>0)h.lunge-=dt*4;
@@ -2337,52 +2533,17 @@ class Game{
   /* ---------- Reittier ---------- */
   grantMount(){
     const h=this.hero;
-    const fresh=pick(MOUNTS.filter(m=>!h.mount||m.k!==h.mount.k));
-    if(!fresh)return;
-    // Das erste Reittier wird zur dauerhaften Blutlinien-Wahl.
-    // Bei jedem weiteren Boss-Reittier entscheidet der Spieler, welches bleibt.
-    if(!h.mount){
-      h.mount=JSON.parse(JSON.stringify(fresh));
-      this.mountLegacy=JSON.parse(JSON.stringify(h.mount));
-      h.recompute();
-      this.mountCd=h.mount.cd*.4;
-      UI.log("Ein "+h.mount.n+" schließt sich dir an! "+h.mount.d+" ("+h.mount.bt+")","lvl");
-      this.fct.add(160,70,h.mount.n.toUpperCase(),"crit");
-      this.parts.confetti(120,GROUND-50);
-      SFX.levelup();
-      return;
-    }
-    const old=JSON.parse(JSON.stringify(h.mount));
-    const choose=(mount)=>{
-      h.mount=JSON.parse(JSON.stringify(mount));
-      this.mountLegacy=JSON.parse(JSON.stringify(h.mount));
-      h.recompute();
-      this.mountCd=h.mount.cd*.4;
-      UI.log("Du behältst "+h.mount.n+" als Reittier für alle folgenden Generationen.","lvl");
-      this.fct.add(160,70,h.mount.n.toUpperCase(),"crit");
-      this.parts.confetti(120,GROUND-50);
-      SFX.levelup();
-      this.save();
-      UI.renderAll();
-    };
-    const mountCard=m=>'<div class="detail" style="cursor:pointer" data-mount-choice="'+m.k+'">'+
-      '<div class="dname" style="color:var(--acc2)">'+m.n+'</div>'+
-      '<div class="dsub">'+m.d+'</div>'+
-      '<div class="hint">'+m.bt+' · überspringt '+fmt(m.skip)+' m</div></div>';
-    UI.openSheet(
-      '<div><div class="dname">Neues Reittier erhalten!</div>'+
-      '<div class="dsub">Wähle, welches Reittier dauerhaft an deine Nachkommen vererbt wird. Das andere geht verloren.</div>'+
-      mountCard(old)+mountCard(fresh)+'</div>',
-      ()=>{
-        $("sheet").querySelectorAll("[data-mount-choice]").forEach(el=>{
-          el.onclick=()=>choose(MOUNTS.find(m=>m.k===el.dataset.mountChoice)||fresh);
-        });
-      }
-    );
+    if(h.mount)return;
+    h.mount=pick(MOUNTS);
+    h.recompute();
+    this.mountCd=h.mount.cd*.4;
+    UI.log("Ein "+h.mount.n+" schließt sich dir an! "+h.mount.d+" ("+h.mount.bt+")","lvl");
+    this.fct.add(160,70,h.mount.n.toUpperCase(),"crit");
+    this.parts.confetti(120,GROUND-50);
+    SFX.levelup();
   }
   canRide(){
-    return !!(this.hero&&this.hero.mount&&this.mountCd<=0&&this.state==="walk"&&this.rideT<=0&&
-      !this.bossPending&&!(this.miniLeft!==undefined&&this.miniLeft<=1));
+    return !!(this.hero&&this.hero.mount&&this.mountCd<=0&&this.state==="walk"&&this.rideT<=0);
   }
   ride(){
     if(!this.canRide())return;
@@ -2476,36 +2637,139 @@ class Game{
     for(let i=0;i<hits;i++)this.resolveHit(h,e,i>0);
     this.castRuneSpells(h,e);
   }
-  /** Löst die Zauber aller getragenen Runen aus */
+  /** Schild eines Gegners fängt Schaden ab; gibt den durchgehenden Rest zurück */
+  absorb(e,d){
+    if(!e.shield||e.shield<=0)return d;
+    const take=Math.min(e.shield,d);
+    e.shield-=take;
+    const y=GROUND-e.ph*.55;
+    if(e.shield<=0){
+      this.fct.add(e.x,y-20,"Schild bricht","block");
+      this.parts.add(e.x,y,24,{spdMin:60,spdMax:180,lifeMin:.3,lifeMax:.7,
+        col:()=>pick(["#bde0ff","#5aa9ff","#ffffff"]),size:2,g:200,glow:1});
+      SFX.block();
+    }else if(take>=d)this.parts.add(e.x-e.pw*.4,y,4,{spdMin:20,spdMax:70,lifeMin:.15,lifeMax:.3,
+        col:"#bde0ff",size:1,g:0,glow:1});
+    return d-take;
+  }
+  /** Zauberschaden an einem Gegner — nur solange der Kampf noch läuft */
+  spellHit(e,d,type,silentKill){
+    if(!e||e.dead||!this.hero||this.state==="dead")return 0;
+    d=Math.max(1,Math.round(d));
+    const raw=d;d=this.absorb(e,d);
+    if(d<=0){this.fct.add(e.x,GROUND-e.ph*.55-10,"Schild "+raw,"block");return 0;}
+    e.hp-=d;e.flash=.1;this.hero.dmgDone+=d;
+    this.fct.add(e.x+rnd(-6,6),GROUND-e.ph*.55-10,d,type||"crit");
+    if(e.hp<=0)this.killEnemy(e);
+    return d;
+  }
+  /** Löst die Zauber aller getragenen Runen aus. Jeder Zauber ist sichtbar:
+      Geschosse fliegen vom Helden zum Ziel, Wirkung erst beim Einschlag. */
   castRuneSpells(h,e){
+    const HX=134,HY=GROUND-46;               // Hand des Helden
+    let delay=0;
     for(const sl of ["rune","rune2","rune3"]){
       const it=h.equip[sl];
       if(!it||!it.spell)continue;
       if(Math.random()*100>=it.spell.chance)continue;
-      const S=it.spell,alive=this.enemies.filter(x=>!x.dead);
-      if(S.k==="fire"||S.k==="drain"){
-        const d=Math.round(S.power*rnd(.85,1.2));
-        e.hp-=d;e.flash=.09;
-        this.fct.add(e.x,GROUND-64,d,"crit");
-        this.parts.ring(e.x,GROUND-38,S.col);
-        if(S.k==="drain"){h.hp=Math.min(h.maxHp,h.hp+Math.round(d*.35));
-          this.fct.add(120,GROUND-62,"+"+Math.round(d*.35),"heal");}
-        if(e.hp<=0)this.killEnemy(e);
-      }else if(S.k==="bolt"){
-        const d=Math.round(S.power*.7);
-        for(const x of alive){x.hp-=d;x.flash=.09;
-          this.fct.add(x.x,GROUND-60,d,"dmg");this.parts.sparks(x.x,GROUND-40);}
-        this.doShake(.2,2.5);
-        for(const x of alive)if(x.hp<=0)this.killEnemy(x);
-      }else if(S.k==="frost"){
-        for(const x of alive){x.atkTimer+=1.2;this.parts.puff(x.x,GROUND-40,S.col);}
-        this.fct.add(210,GROUND-80,"Frostnova","block");
-      }else if(S.k==="heal"){
-        const g=Math.round(h.maxHp*.12);
-        h.hp=Math.min(h.maxHp,h.hp+g);
-        this.fct.add(120,GROUND-62,"+"+g,"heal");this.parts.puff(120,GROUND-40,S.col);
+      const S=it.spell;
+      // Mehrere Runen im selben Schlag feuern leicht versetzt
+      setTimeout(()=>this.castSpell(h,e,S,HX,HY),delay);
+      delay+=140;
+    }
+  }
+  castSpell(h,e,S,HX,HY){
+    if(!this.hero||this.state==="dead")return;
+    if(!e||e.dead)e=this.target();
+    const alive=this.enemies.filter(x=>!x.dead);
+    const name=(RUNE_SPELLS.find(x=>x.k===S.k)||{}).n||"";
+    this.spells.flare(HX,HY,S.col,14,.22);
+    if(name)this.fct.add(HX+6,GROUND-82,name+"!","loot");
+    if(S.k==="fire"){
+      if(!e)return;
+      SFX.whoosh();
+      this.spells.shot(HX,HY,e,{col:"#ff7a2b",core:"#fff3b0",r:4,spd:260,arc:10,trail:"fire",
+        onHit:(x,y)=>{
+          this.spells.flare(x,y,"#ff7a2b",34,.4);
+          this.parts.add(x,y,26,{spdMin:40,spdMax:190,lifeMin:.25,lifeMax:.7,
+            col:()=>pick(["#ffd166","#ff7a2b","#ff4d1a","#fff3b0"]),size:2,g:120,glow:1});
+          this.parts.ring(x,y,"#ff9a3c");
+          this.doShake(.2,3);SFX.boom();
+          this.spellHit(e,S.power*rnd(.85,1.2),"crit");
+          if(e.affix&&e.affix.k==="frozen")this.fct.add(x,y-24,"Geschmolzen","block");
+        }});
+    }else if(S.k==="meteor"){
+      if(!e)return;
+      SFX.meteor();
+      this.spells.shot(e.x-90,-20,e,{col:"#ff3b1a",core:"#ffd166",r:7,spd:340,trail:"meteor",
+        onHit:(x,y)=>{
+          const gy=GROUND-6;
+          this.spells.flare(x,gy-10,"#ff5b1a",64,.55);
+          this.spells.nova(x,gy,"#ff7a2b",120);
+          this.parts.add(x,gy,40,{dir:-Math.PI/2,spread:1.3,spdMin:60,spdMax:260,lifeMin:.4,lifeMax:1,
+            col:()=>pick(["#ffd166","#ff7a2b","#6b3a1e","#3a2a22","#fff3b0"]),size:3,g:420,glow:1});
+          this.flash={t:.18,max:.18,col:"#ff7a2b"};
+          this.doShake(.45,6);SFX.boom();
+          this.spellHit(e,S.power*1.15,"crit");
+          for(const x2 of this.enemies.filter(z=>!z.dead&&z!==e))this.spellHit(x2,S.power*.45,"dmg");
+        }});
+    }else if(S.k==="drain"){
+      if(!e)return;
+      SFX.drain();
+      this.spells.shot(HX,HY,e,{col:"#8a4fff",core:"#e0c6ff",r:3,spd:300,trail:"dark",
+        onHit:(x,y)=>{
+          this.spells.flare(x,y,"#c39bff",24,.3);
+          const d=this.spellHit(e,S.power*rnd(.85,1.2),"crit");
+          if(!d)return;
+          const heal=Math.round(d*.35);
+          // Die geraubte Seele fliegt zurück zum Helden
+          this.spells.shot(x,y,{x:122,y:GROUND-40},{col:"#5ce08a",core:"#eafff1",r:3,spd:220,arc:14,trail:"dark",
+            onHit:()=>{
+              if(!this.hero||this.state==="dead")return;
+              h.hp=Math.min(h.maxHp,h.hp+heal);
+              this.fct.add(120,GROUND-62,"+"+heal,"heal");
+              this.spells.flare(122,GROUND-40,"#5ce08a",20,.3);
+              this.parts.puff(122,GROUND-40,"#5ce08a");
+            }});
+        }});
+    }else if(S.k==="bolt"){
+      if(!alive.length)return;
+      SFX.zap();
+      const pts=[{x:HX,y:HY}].concat(alive.slice().sort((a,b)=>a.x-b.x)
+        .map(x=>({x:x.x,y:GROUND-x.ph*.55})));
+      this.spells.chain(pts,"#8be9fd");
+      this.flash={t:.12,max:.12,col:"#8be9fd"};
+      this.doShake(.25,3);
+      for(const x of alive){
+        this.parts.sparks(x.x,GROUND-x.ph*.55);
+        this.spellHit(x,S.power*.7,"dmg");
       }
-      SFX.skill();
+    }else if(S.k==="frost"){
+      SFX.frost();
+      this.spells.nova(122,GROUND,"#9fd8ff",320);
+      this.doShake(.12,1.5);
+      for(const x of alive){
+        x.atkTimer+=1.2;x.chill=2.4;
+        this.parts.add(x.x,GROUND-x.ph*.5,14,{spdMin:20,spdMax:80,lifeMin:.4,lifeMax:.9,
+          col:()=>pick(["#ffffff","#9fd8ff","#cfeaff"]),size:2,g:40,glow:1});
+      }
+    }else if(S.k==="heal"){
+      SFX.heal();
+      const g=Math.round(h.maxHp*.12);
+      h.hp=Math.min(h.maxHp,h.hp+g);
+      this.spells.pillar(122,"#5ce08a");
+      this.fct.add(120,GROUND-62,"+"+g,"heal");
+      this.parts.add(122,GROUND-20,22,{dir:-Math.PI/2,spread:.5,spdMin:30,spdMax:90,lifeMin:.6,lifeMax:1.2,
+        col:()=>pick(["#5ce08a","#eafff1","#9df3dc"]),size:2,g:-20,glow:1});
+    }else if(S.k==="venom"){
+      if(!alive.length)return;
+      SFX.venom();
+      for(const x of alive){
+        // Gift stapelt nicht, frischt aber auf; die stärkere Wirkung gewinnt
+        const dps=Math.max(1,Math.round(S.power*.22));
+        x.dot={t:4,dps:Math.max(dps,x.dot&&x.dot.t>0?x.dot.dps:0),tick:0,col:"#7cd66a"};
+        this.spells.cloud(x.x,GROUND-x.ph*.45,"#7cd66a",4);
+      }
     }
   }
   resolveHit(h,e,extra){
@@ -2523,8 +2787,13 @@ class Game{
     const blocked=Math.random()<blockChance;
     if(blocked)dmg*=.28;
     dmg=Math.max(1,Math.round(dmg));
-    e.hp-=dmg;e.flash=.09;h.dmgDone+=dmg;
     const ex=e.x,ey=GROUND-e.ph*.55;
+    if(e.shield>0){
+      const rest=this.absorb(e,dmg);
+      if(rest<=0){this.fct.add(ex,ey,"Schild "+dmg,"block");SFX.block();return;}
+      dmg=rest;
+    }
+    e.hp-=dmg;e.flash=.09;h.dmgDone+=dmg;
     if(blocked){
       this.parts.sparks(ex-10,ey);SFX.block();
       this.fct.add(ex,ey,"BLOCK "+dmg,"block");
@@ -2536,11 +2805,28 @@ class Game{
         if(h.hasUniq("critboom")){
           const s=Math.round(dmg*.4);e.hp-=s;
           this.fct.add(ex+14,ey-12,s,"dmg");this.parts.sparks(ex,ey);
+          // Sternenbrecher: Sternexplosion mit Splittern in alle Richtungen
+          this.spells.flare(ex,ey,"#ffe27a",30,.3);
+          this.parts.add(ex,ey,16,{spdMin:120,spdMax:220,lifeMin:.2,lifeMax:.4,
+            col:()=>pick(["#ffffff","#ffe27a","#bde0ff"]),size:2,g:0,glow:1});
         }
       }else SFX.hit();
     }
     if(h.leech>0){const heal=Math.max(1,Math.round(Math.min(dmg*h.leech/100,h.maxHp*.025)));
-      if(h.hp<h.maxHp){h.hp=Math.min(h.maxHp,h.hp+heal);this.fct.add(120,GROUND-46,"+"+heal,"heal");}}
+      if(h.hp<h.maxHp){h.hp=Math.min(h.maxHp,h.hp+heal);this.fct.add(120,GROUND-46,"+"+heal,"heal");
+        // Lebensraub: rote Tropfen fließen vom Gegner zum Helden
+        const n=h.hasUniq("leech")?3:1;
+        for(let j=0;j<n;j++)this.spells.shot(ex+rnd(-4,4),ey+rnd(-4,4),{x:122,y:GROUND-40},
+          {col:"#ff4d6d",core:"#ffd0d8",r:1.4,spd:200+j*40,arc:8+j*6,trail:"blood"});}}
+    if(extra&&!blocked){                   // Zweitschlag: Nachbild in Türkis
+      this.spells.flare(ex-8,ey,"#8be9fd",16,.2);
+      if(Math.random()<.5)this.fct.add(ex,ey-22,"Zweitschlag","block");
+    }
+    if(h.hasUniq("execute")&&e.hpPct<.30&&!e.dead&&!e._exec){
+      e._exec=true;                        // Henkersbeil: einmal sichtbar ansagen
+      this.spells.flare(ex,ey,"#ff3b3b",26,.35);
+      this.fct.add(ex,ey-30,"Hinrichtung","crit");
+    }
     if(e.hp<=0)this.killEnemy(e);
   }
   enemyAttack(e){
@@ -2572,8 +2858,10 @@ class Game{
     }
     // Dornen
     if(h.thorns>0){const r=Math.max(1,Math.round(dmg*h.thorns/100+h.thorns*.4));
-      e.hp-=r;e.flash=.06;this.fct.add(e.x,GROUND-52,r,"dmg");
-      if(e.hp<=0)this.killEnemy(e);}
+      // Dornen fliegen als grüne Stacheln zurück; Schaden beim Einschlag
+      const n=h.hasUniq("thorns")?3:1;
+      for(let j=0;j<n;j++)this.spells.shot(128,GROUND-36-j*6,e,{col:"#a3d977",core:"#efffd0",r:1.4,
+        spd:420,trail:"thorn",onHit:j?null:()=>this.spellHit(e,r,"dmg")});}
   }
   damageHero(dmg,src,silent,crit,blocked,foe){
     const h=this.hero;
@@ -2602,6 +2890,16 @@ class Game{
     if(!e||e.dead)return;
     e.dead=true;
     const cx=e.x,cy=GROUND-e.ph*.5;
+    if(e.affix&&e.affix.k==="explosive"&&this.state!=="dead"){
+      // Berstender: Druckwelle trifft den Helden
+      const d=Math.max(1,Math.round(e.dmg*1.2*(1-h.dmgRed/100)));
+      this.spells.flare(cx,cy,"#ff5b1a",56,.45);
+      this.spells.nova(cx,GROUND,"#ff7a2b",160);
+      this.parts.add(cx,cy,34,{spdMin:60,spdMax:240,lifeMin:.3,lifeMax:.8,
+        col:()=>pick(["#ffd166","#ff5b1a","#3a2a22"]),size:3,g:300,glow:1});
+      this.doShake(.4,5);SFX.boom();
+      setTimeout(()=>{if(this.hero&&this.state!=="dead")this.damageHero(d,"Explosion",false,false,false,e);},120);
+    }
     this.parts.add(cx,cy,e.boss?70:26,{spdMin:40,spdMax:e.boss?260:150,lifeMin:.4,lifeMax:1.1,
       col:()=>pick([e.pal[2],e.pal[3],e.pal[6],"#ffffff"]),size:2,g:280,glow:1});
     if(e.boss){this.doShake(.7,8);SFX.boss();}
@@ -2815,6 +3113,7 @@ class Game{
     this.drawDrops(c);
     if(this.hero&&this.state!=="idle")this.drawHero(c);
     this.drawEnemies(c);
+    this.spells.draw(c);
     this.parts.draw(c);
     this.drawWeather(c);
     this.drawNightTint(c);
@@ -3449,6 +3748,32 @@ class Game{
       Math.round(Math.sin(this.time*2.4)*3)-6:0;
     drawSprite(c,sp,x,GROUND-bob+floaty,e.scale,pal,true,e.flash>0?"#ffffff":null,
       e.model==="gespenst"||e.model==="geist"?.78:1,e.enraged?0:e.hue);
+    if(e.shield>0){                    // Schildblase, wird mit dem Schild schwächer
+      const k=e.shield/e.shieldMax,cy=GROUND-e.ph*.5+floaty;
+      c.save();c.globalAlpha=.18+.22*k;c.fillStyle="#5aa9ff";
+      c.beginPath();c.ellipse(x,cy,e.pw*.62,e.ph*.62,0,0,7);c.fill();
+      c.globalAlpha=.5+.4*k;c.strokeStyle="#bde0ff";c.lineWidth=1.5;
+      c.setLineDash([4,3]);c.lineDashOffset=-this.time*20;c.stroke();c.setLineDash([]);
+      c.restore();
+    }
+    if(e.affix&&e.affix.k==="explosive"){   // pulsierender Glutkern warnt vor dem Bersten
+      const p=.5+.5*Math.sin(this.time*(e.hpPct<.35?16:6));
+      c.save();c.globalAlpha=.25+.35*p;
+      const g=c.createRadialGradient(x,GROUND-e.ph*.5+floaty,0,x,GROUND-e.ph*.5+floaty,e.pw*.6);
+      g.addColorStop(0,"rgba(255,140,40,.9)");g.addColorStop(1,"rgba(255,60,20,0)");
+      c.fillStyle=g;c.beginPath();c.arc(x,GROUND-e.ph*.5+floaty,e.pw*.6,0,7);c.fill();c.restore();
+    }
+    if(e.chill>0){                     // Eisschicht am Boden und kalter Schimmer
+      const a=clamp(e.chill,0,1);
+      c.save();c.globalAlpha=.55*a;c.fillStyle="#cfeaff";
+      c.beginPath();c.ellipse(x,GROUND,e.pw*.5,5,0,0,7);c.fill();
+      c.globalAlpha=.9*a;c.fillStyle="#ffffff";
+      for(let j=-2;j<=2;j++)c.fillRect(x+j*e.pw*.18,GROUND-3-((j+3)%3)*3,2,4+((j+5)%3)*2);
+      c.restore();
+    }
+    if(e.dot&&e.dot.t>0&&Math.random()<.35)
+      this.parts.add(x+rnd(-e.pw*.3,e.pw*.3),GROUND-e.ph*.6,1,{spdMin:4,spdMax:16,lifeMin:.4,lifeMax:.8,
+        col:pick(["#7cd66a","#c6ff8a"]),size:2,g:-20});
     // Lebensbalken über dem Kopf
     const top=GROUND-e.ph+floaty-9;
     const bw=e.boss?86:e.mini?70:clamp(e.pw*.85,26,56);
@@ -3607,13 +3932,13 @@ class Game{
   async save(){
     await Store.set("ad_meta",{meta:this.meta,shards:this.shards,stats:this.stats,
       heirlooms:this.heirlooms,heirGems:this.heirGems,heirGold:this.heirGold,
-      heirAttr:this.heirAttr,graves:this.graves,mountLegacy:this.mountLegacy});
+      heirAttr:this.heirAttr,graves:this.graves});
     if(this.hero&&this.state!=="dead"){
       await Store.set("ad_run",{
         hero:{name:this.hero.name,race:this.hero.race,cls:this.hero.cls,level:this.hero.level,
           xp:this.hero.xp,gold:this.hero.gold,potions:this.hero.potions,skillPts:this.hero.skillPts,
           skills:this.hero.skills,equip:this.hero.equip,bag:this.hero.bag,gems:this.hero.gems,
-          base:this.hero.base,hp:this.hero.hp,mount:this.hero.mount,kills:this.hero.kills,bossKills:this.hero.bossKills,
+          base:this.hero.base,hp:this.hero.hp,kills:this.hero.kills,bossKills:this.hero.bossKills,
           shardsRun:this.hero.shardsRun,dmgDone:this.hero.dmgDone},
         zone:this.zone,dist:this.dist,lastBoss:this.lastBoss,bossPending:this.bossPending,
         totalDist:this.totalDist,bossMarks:this.bossMarks
@@ -3646,9 +3971,8 @@ class Game{
     this.hero=new Hero(d.name,d.race,d.cls,this.meta);
     Object.assign(this.hero,{level:d.level,xp:d.xp,gold:d.gold,potions:d.potions,
       skillPts:d.skillPts,skills:d.skills||{},equip:d.equip||{},bag:d.bag||[],gems:d.gems||[],
-      base:d.base,mount:d.mount||this.mountLegacy||null,kills:d.kills||0,bossKills:d.bossKills||0,shardsRun:d.shardsRun||0,dmgDone:d.dmgDone||0});
+      base:d.base,kills:d.kills||0,bossKills:d.bossKills||0,shardsRun:d.shardsRun||0,dmgDone:d.dmgDone||0});
     this.hero.recompute();this.hero.hp=Math.max(1,d.hp||this.hero.maxHp);
-    if(!this.mountLegacy&&this.hero.mount)this.mountLegacy=JSON.parse(JSON.stringify(this.hero.mount));
     this.zone=r.zone||1;this.dist=0;this.nextEncounter=150;this.totalDist=r.totalDist||0;this.bossMarks=r.bossMarks||[];
     this.bossPending=r.bossPending||false;
     this.state="walk";this.enemy=null;
@@ -3800,8 +4124,6 @@ const UI={
     if(h.mount){
       const ready=G.canRide();
       const rest=Math.max(0,Math.ceil(G.mountCd));
-      const rideBlocked=G.bossPending?"Ein Weltenboss versperrt den Weg.":
-        (G.miniLeft!==undefined&&G.miniLeft<=1?"Ein Miniboss versperrt den Weg.":"");
       html+='<div class="h3">Reittier</div>'+
         '<div class="mountbox"><canvas id="mountCv" width="132" height="96"></canvas>'+
         '<div class="mbody"><b>'+h.mount.n+'</b>'+
@@ -3810,7 +4132,7 @@ const UI={
         '<div class="btnrow" style="margin-top:7px">'+
         '<button class="btn'+(ready?" p":"")+'" id="btnRide"'+(ready?"":" disabled")+'>'+
         (ready?"Aufsitzen \u2014 "+fmt(h.mount.skip)+" m überspringen":
-          (rideBlocked?rideBlocked:(G.state==="walk"?"Bereit in "+rest+" s":"Nur unterwegs möglich")))+
+          (G.state==="walk"?"Bereit in "+rest+" s":"Nur unterwegs möglich"))+
         '</button></div>'+
         '<small style="color:var(--dim)">Ein Ritt bringt dich eine Zone tiefer. '+
         'Die Gegner dort sind stärker.</small></div></div>';
@@ -3871,7 +4193,7 @@ const UI={
         slotIcon(slotKey)+
         '<span class="slotname">'+SLOTS[slotKey].n+'</span></div>';
     }
-    const socks=it.sockets.length?'<span class="sock">'+it.sockets.map(s=>s?"\u25C6":"\u25CB").join("")+'</span>':"";
+    const socks=it.sockets.length?'<span class="sock'+(it.sockets.indexOf(null)>=0?" open":"")+'">'+socketDots(it)+'</span>':"";
     // Pfeil = stärker als das angelegte Teil, Punkt = noch nicht angesehen
     const eq=G.hero?G.hero.equip[it.slot]:null;
     const canW=!G.hero||G.hero.canEquip(it).ok;
@@ -3937,9 +4259,27 @@ const UI={
     if(it.dmax)x+='<div class="effline">'+it.dmin+" \u2013 "+it.dmax+' Schaden</div>';
     if(it.armor)x+='<div class="effline">'+it.armor+' Rüstung</div>';
     if(it.uniqTxt)x+='<div class="uniq">'+it.uniqTxt+'</div>';
-    if(it.sockets.length)x+='<div style="color:var(--acc2);font-size:12px;margin:4px 0">Sockel: '+
-      it.sockets.map(g=>{if(!g)return "\u25CB frei";const P=parseGem(g);
-        return '<span style="color:'+P.Q.col+'">'+P.name+"</span> ("+P.txt+")";}).join(", ")+'</div>';
+    if(it.sockets.length){
+      // Jeder Sockel eine Zeile: was drin steckt, ob er sich veredeln lässt, was Herauslösen kostet
+      x+='<div class="socklist"><div class="sockhd">Sockel '+socketDots(it)+' '+
+        it.sockets.filter(Boolean).length+' / '+it.sockets.length+' belegt</div>';
+      for(const g of it.sockets){
+        if(!g){x+='<div class="sockrow"><i class="sdot"></i><span style="color:var(--muted)">frei — Edelstein im Inventar anklicken, dann diesen Gegenstand</span></div>';continue;}
+        const P=parseGem(g);
+        let tail="";
+        if(where!=="shop"&&where!=="relic"){
+          if(P.q<9){
+            const rc=refineCost(P.q);
+            tail+=G.shards>=rc?' <span class="sok">✓ veredelbar ('+rc+' ✦)</span>':
+              ' <span class="sno">veredeln: '+rc+' ✦</span>';
+          }else tail+=' <span class="sno">höchste Güte</span>';
+          tail+=' <span class="sno">· herauslösen: '+fmt(gemRemoveCost(P.q))+' G</span>';
+        }
+        x+='<div class="sockrow"><i class="sdot f" style="background:'+P.col+'"></i>'+
+          '<span><span style="color:'+P.Q.col+'">'+P.name+'</span> '+P.txt+tail+'</span></div>';
+      }
+      x+='</div>';
+    }
     if(it.req){
       const chk=h.canEquip(it);
       const nm={str:"Stärke",dex:"Geschick",int:"Intelligenz",vit:"Ausdauer"}[it.req.k];
@@ -4169,9 +4509,10 @@ const UI={
     const pct={crit:1,critdmg:1,dmgpct:1,aspd:1,leech:1,gf:1,mf:1};
     for(const k in s)h+='<div class="stat">+'+s[k]+(pct[k]?"% ":" ")+names[k]+'</div>';
     if(it.sockets.length){
-      h+='<div style="margin-top:5px;color:var(--acc2)">Sockel: '+
-        it.sockets.map(g=>{if(!g)return "\u25CB leer";const P=parseGem(g);
-          return '<span style="color:'+P.Q.col+'">'+P.name+"</span> "+P.txt;}).join(", ")+'</div>';
+      h+='<div style="margin-top:5px;color:var(--acc2)">Sockel '+socketDots(it)+' '+
+        (it.sockets.indexOf(null)>=0?'<span style="color:var(--acc2)">'+it.sockets.filter(g=>!g).length+' frei</span>':"")+'</div>'+
+        it.sockets.filter(Boolean).map(g=>{const P=parseGem(g);
+          return '<div class="stat"><span style="color:'+P.Q.col+'">'+P.name+"</span> "+P.txt+'</div>';}).join("");
     }
     if(it.skillK){const sk=SKILLS.find(y=>y.k===it.skillK);
     if(sk)h+='<div class="uniq">+'+it.skillV+" Rang "+sk.n+'</div>';}
@@ -4353,28 +4694,85 @@ const UI={
     // ---------- Mystiker ----------
     const gcounts={};h.gems.forEach(g=>gcounts[g]=(gcounts[g]||0)+1);
     const gkeys=Object.keys(gcounts).sort((a,b)=>parseGem(b).q-parseGem(a).q);
+    // Alle eingesetzten Steine, angelegt und im Beutel
+    const socketed=[];
+    const owned=[].concat(Object.values(h.equip).filter(Boolean),h.bag);
+    for(const it of owned){
+      if(!it||!it.sockets)continue;
+      it.sockets.forEach((g,si)=>{if(g)socketed.push({it,si,gem:g,worn:Object.values(h.equip).indexOf(it)>=0});});
+    }
+    const scount={};socketed.forEach(x=>scount[x.gem]=(scount[x.gem]||0)+1);
+    const nextTxt=P=>P.q>=9?"höchste Güte":"nächste Güte: "+GEM_QUAL[P.q+1].n+
+      " (+"+Math.max(1,Math.round(P.base.amt*GEM_QUAL[P.q+1].m))+P.base.unit+")";
     html+='<div class="h3">Mystiker — Edelsteine veredeln</div>'+
       '<div class="hint">Drei gleiche Steine verschmelzen zu einem der nächsten Güte. '+
-      'Einzelne Steine hebt der Mystiker gegen Seelensplitter an.</div>';
+      'Einzelne Steine hebt der Mystiker gegen Seelensplitter an — auch solche, die schon in einem Gegenstand sitzen.</div>';
     if(gkeys.length){
       html+='<div class="shop" style="margin-top:9px">';
       for(const k of gkeys){
-        const P=parseGem(k),n=gcounts[k],top=P.q>=9;
+        const P=parseGem(k),n=gcounts[k],top=P.q>=9,inS=scount[k]||0;
         const mc=mergeCost(P.q,h.level),rc=refineCost(P.q);
-        html+='<div class="offer"><div class="ic" style="color:'+P.col+'">'+
+        let note="";
+        if(!top&&n<3&&n+inS>=3){
+          // Fehlende Steine stecken in Gegenständen: sagen, was das Herausnehmen kostet
+          const need=3-n;
+          const pull=socketed.filter(x=>x.gem===k).slice(0,need)
+            .reduce((t,x)=>t+gemRemoveCost(parseGem(x.gem).q),0);
+          note='<small style="display:block;color:var(--gold)">'+inS+' weitere eingesetzt — '+need+
+            ' herausnehmen für '+fmt(pull)+' G, dann verschmelzbar</small>';
+        }else if(inS)note='<small style="display:block;color:var(--muted)">'+inS+' weitere eingesetzt</small>';
+        html+='<div class="offer stack"><div class="ic" style="color:'+P.col+'">'+
           artImg("gem_"+P.base.k,P.base.ico)+'</div>'+
-          '<div class="meta"><div style="color:'+P.Q.col+'">'+P.name+' \u00D7'+n+'</div>'+
-          '<small>'+P.txt+(top?" \u00B7 höchste Güte":" \u00B7 nächste Güte: "+
-            GEM_QUAL[P.q+1].n+" (+"+Math.max(1,Math.round(P.base.amt*GEM_QUAL[P.q+1].m))+P.base.unit+")")+
-          '</small></div>'+
-          (top?'':'<button class="btn" data-merge="'+k+'"'+((n>=3&&h.gold>=mc)?"":" disabled")+'>'+
-            '3\u21921 \u00B7 '+fmt(mc)+' G</button>'+
+          '<div class="meta"><div style="color:'+P.Q.col+'">'+P.name+' ×'+n+'</div>'+
+          '<small>'+P.txt+" · "+nextTxt(P)+'</small>'+note+'</div><div class="acts">'+
+          (top?'<span class="hint">höchste Güte</span>':'<button class="btn" data-merge="'+k+'"'+((n>=3&&h.gold>=mc)?"":" disabled")+'>'+
+            '3→1 · '+fmt(mc)+' G</button>'+
           '<button class="btn s" data-refine="'+k+'"'+((G.shards>=rc)?"":" disabled")+'>'+
-            'Veredeln \u00B7 '+rc+' \u2726</button>')+
-          '</div>';
+            'Veredeln · '+rc+' ✦</button>')+
+          '</div></div>';
       }
       html+='</div>';
-    }else html+='<div class="hint" style="margin-top:8px">Du trägst keine Edelsteine bei dir.</div>';
+    }else html+='<div class="hint" style="margin-top:8px">Du trägst keine losen Edelsteine bei dir.</div>';
+
+    // Eingesetzte Steine: direkt veredeln oder gegen Gold herauslösen
+    html+='<div class="h3">Mystiker — eingesetzte Edelsteine</div>';
+    if(socketed.length){
+      html+='<div class="hint">Veredeln wirkt sofort im Gegenstand. Herauslösen legt den Stein zurück in deinen Beutel.</div>'+
+        '<div class="shop" style="margin-top:9px">';
+      socketed.forEach((x,idx)=>{
+        const P=parseGem(x.gem),top=P.q>=9,rc=refineCost(P.q),cost=gemRemoveCost(P.q);
+        html+='<div class="offer stack"><div class="ic" style="color:'+P.col+'">'+
+          artImg("gem_"+P.base.k,P.base.ico)+'</div>'+
+          '<div class="meta"><div><span style="color:'+P.Q.col+'">'+P.name+'</span> '+
+          '<span style="color:var(--muted)">in</span> <span style="color:'+RARITY[x.it.rar].hex+'">'+iname(x.it)+'</span></div>'+
+          '<small>'+P.txt+(x.worn?" · angelegt":" · im Beutel")+" · "+nextTxt(P)+'</small></div><div class="acts">'+
+          (top?'':'<button class="btn s" data-refinesock="'+idx+'"'+(G.shards>=rc?"":" disabled")+'>'+
+            'Veredeln · '+rc+' ✦</button>')+
+          '<button class="btn" data-removegem="'+idx+'"'+(h.gold>=cost?"":" disabled")+'>'+
+            'Herauslösen · '+fmt(cost)+' G</button></div></div>';
+      });
+      html+='</div>';
+    }else html+='<div class="hint">In keinem deiner Gegenstände sitzt ein Edelstein.</div>';
+
+    // Sockel bohren, bis zu fünf je Gegenstand
+    const drillable=owned.filter(it=>!it.isRune&&it.sockets.length<MAX_SOCKETS)
+      .sort((a,b)=>{const wa=Object.values(h.equip).indexOf(a)>=0,wb=Object.values(h.equip).indexOf(b)>=0;
+        return (wb-wa)||(itemScore(b)-itemScore(a));}).slice(0,10);
+    html+='<div class="h3">Mystiker — Sockel bohren</div>'+
+      '<div class="hint">Jeder Gegenstand fasst bis zu '+MAX_SOCKETS+' Sockel. Jeder weitere wird teurer.</div>';
+    if(drillable.length){
+      html+='<div class="shop" style="margin-top:9px">';
+      drillable.forEach((it,idx)=>{
+        const cost=drillCost(it),worn=Object.values(h.equip).indexOf(it)>=0;
+        html+='<div class="offer stack"><div class="ic" style="color:'+RARITY[it.rar].hex+'">'+
+          artImg(artIdFor(it),SLOTS[it.slot]?SLOTS[it.slot].ico:"?")+'</div>'+
+          '<div class="meta"><div style="color:'+RARITY[it.rar].hex+'">'+iname(it)+'</div>'+
+          '<small>'+socketDots(it)+' '+it.sockets.length+' / '+MAX_SOCKETS+' Sockel'+(worn?" · angelegt":"")+'</small></div><div class="acts">'+
+          '<button class="btn" data-drill="'+idx+'"'+(h.gold>=cost?"":" disabled")+'>'+
+            '+1 Sockel · '+fmt(cost)+' G</button></div></div>';
+      });
+      html+='</div>';
+    }else html+='<div class="hint">Alle deine Gegenstände haben bereits '+MAX_SOCKETS+' Sockel.</div>';
 
     html+='<div class="h3">Ahnenhalle — dauerhafte Verbesserungen</div>'+
       '<div class="row"><span>Seelensplitter</span><b style="color:var(--soul)">'+G.shards+'</b></div>'+
@@ -4437,6 +4835,42 @@ const UI={
         SFX.init();SFX.levelup();
         this.log("Der Mystiker veredelt einen "+P.name+" zu einem "+N.name+" ("+N.txt+").","lvl");
         G.save();this.renderTown();this.updateBars();
+      };
+    });
+    // Eingesetzte Steine
+    const afterGemChange=()=>{h.recompute();G.save();this.renderTown();this.updateBars();};
+    el.querySelectorAll("[data-removegem]").forEach(b=>{
+      b.onclick=()=>{
+        const x=socketed[+b.dataset.removegem];if(!x||x.it.sockets[x.si]!==x.gem)return;
+        const P=parseGem(x.gem),cost=gemRemoveCost(P.q);
+        if(h.gold<cost)return;
+        h.gold-=cost;x.it.sockets[x.si]=null;h.gems.push(x.gem);
+        SFX.init();SFX.socket();G.parts.puff(120,GROUND-40,P.col);
+        this.log("Der Mystiker löst "+P.name+" aus "+iname(x.it)+" (−"+fmt(cost)+" Gold).","gold");
+        afterGemChange();
+      };
+    });
+    el.querySelectorAll("[data-refinesock]").forEach(b=>{
+      b.onclick=()=>{
+        const x=socketed[+b.dataset.refinesock];if(!x||x.it.sockets[x.si]!==x.gem)return;
+        const P=parseGem(x.gem),cost=refineCost(P.q);
+        if(G.shards<cost||P.q>=9)return;
+        G.shards-=cost;
+        const nk=gemId(P.base.k,P.q+1);x.it.sockets[x.si]=nk;
+        const N=parseGem(nk);
+        SFX.init();SFX.levelup();G.parts.ring(120,GROUND-40,N.Q.col);
+        this.log("Der Mystiker veredelt "+P.name+" in "+iname(x.it)+" zu "+N.name+" ("+N.txt+").","lvl");
+        afterGemChange();
+      };
+    });
+    el.querySelectorAll("[data-drill]").forEach(b=>{
+      b.onclick=()=>{
+        const it=drillable[+b.dataset.drill];if(!it||it.sockets.length>=MAX_SOCKETS)return;
+        const cost=drillCost(it);if(h.gold<cost)return;
+        h.gold-=cost;it.sockets.push(null);
+        SFX.init();SFX.socket();G.parts.sparks(120,GROUND-40);
+        this.log("Der Mystiker bohrt einen Sockel in "+iname(it)+" ("+it.sockets.length+" / "+MAX_SOCKETS+").","loot");
+        afterGemChange();
       };
     });
     $("reroll").onclick=()=>{
@@ -4528,8 +4962,8 @@ const UI={
   },
   /* ---------- Tab: Ahnengalerie ---------- */
   /** Zusammenfassung dessen, was die Weihgaben zurzeit bewirken */
-  relicSummaryHtml(){
-    const R=relicBonuses();
+  relicSummaryHtml(only){
+    const R=relicBonuses(only);
     const names={str:"Stärke",dex:"Geschick",int:"Intelligenz",vit:"Ausdauer",hp:"Leben",
       armor:"Rüstung",crit:"Krit-Chance %",critdmg:"Krit-Schaden %",dmgpct:"Schaden %",
       aspd:"Angriffstempo %",leech:"Lebensraub %",gf:"Goldfund %",mf:"Magiefund %",thorns:"Dornen %"};
@@ -4598,11 +5032,12 @@ const UI={
           '<small style="color:var(--muted)">'+(g.active?"wirkt in jedem Lauf":"ruht")+'</small></div>'+
           '<button class="btn'+(g.active?"":" s")+'" data-toggle="'+idx+'">'+
           (g.active?"Ruhen lassen":"Erwecken")+'</button>'+
-          '<button class="btn" data-relicinfo="'+idx+'">Details</button></div>';
+          '<button class="btn" data-relicinfo="'+idx+'">Details</button></div>'+
+          '<div class="releff'+(g.active?"":" off")+'">'+this.relicSummaryHtml(it)+'</div>';
       }else{
         const price=this.relicPrice();
         html+='<div class="relic"><div class="rtxt"><div style="color:var(--muted)">Kein Gegenstand geweiht</div>'+
-          '<small style="color:var(--muted)">Kostet '+price+' \u2726 und verbraucht den Gegenstand</small></div>'+
+          '<small style="color:var(--muted)">Kostet '+price+' \u2726 und verbraucht einen legendären Gegenstand</small></div>'+
           '<button class="btn p" data-offer="'+idx+'"'+
           ((h&&G.shards>=price)?"":" disabled")+'>Weihen</button></div>';
       }
@@ -4638,7 +5073,7 @@ const UI={
   },
   relicPrice(){
     const n=G.graves.filter(g=>g.relic).length;
-    return 6+n*8;
+    return 6+n*4;
   },
   /** Auswahlfenster: welchen Gegenstand des lebenden Helden bekommt der Ahne? */
   offerRelic(idx){
@@ -4647,11 +5082,10 @@ const UI={
     const price=this.relicPrice();
     if(G.shards<price){this.toast("Zu wenig Seelensplitter.");return;}
     const items=[].concat(Object.values(h.equip).filter(Boolean),h.bag)
-      .filter(it=>it.rar===3)
-      .sort((a,b)=>itemScore(b)-itemScore(a)).slice(0,24);
-    if(!items.length){this.toast("Dein Held hat keinen legendären Gegenstand, der geweiht werden kann.");return;}
+      .filter(isRelicWorthy).sort((a,b)=>itemScore(b)-itemScore(a)).slice(0,24);
+    if(!items.length){this.toast("Nur legendäre Gegenstände lassen sich weihen — dein Held trägt keinen.");return;}
     const html='<div><div class="dname">Weihgabe für '+g.name+'</div>'+
-      '<div class="dsub">Nur ein legendärer Gegenstand kann geweiht werden. Er wird verbraucht. Seine Eigenschaften wirken danach '+
+      '<div class="dsub">Der Gegenstand wird verbraucht. Seine Eigenschaften wirken danach '+
       'in jedem künftigen Lauf zu '+Math.round(RELIC_RATE*100)+' %.</div>'+
       '<div class="hint">Kosten: '+price+' \u2726 \u00B7 vorhanden: '+G.shards+' \u2726</div>'+
       '<div class="bag" style="margin-top:9px">'+
@@ -4668,7 +5102,9 @@ const UI={
           const bi=h.bag.indexOf(it);if(bi>=0)h.bag.splice(bi,1);
           G.shards-=price;
           g.relic=JSON.parse(JSON.stringify(it));
-          g.active=G.graves.filter(x=>x.relic&&x.active).length<relicSlots();
+          const act=G.graves.filter(x=>x.relic&&x.active);
+          if(act.length>=relicSlots())act[0].active=false;
+          g.active=true;
           h.recompute();
           SFX.init();SFX.levelup();G.parts.confetti(120,GROUND-50);
           this.log(it.name+" wurde "+g.name+" geweiht"+(g.active?" und wirkt ab sofort.":" und ruht vorerst."),"lvl");
@@ -5030,7 +5466,44 @@ const UI={
   showDeath(total,bonus,refreshOnly){
     const o=$("overlay"),c=$("overlayCard");
     const h=G.hero;
-    if(!refreshOnly){this._deathTotal=total;this._deathBonus=bonus;this._heirPick=[];this._gemPick=[];}
+    if(!refreshOnly){this._deathTotal=total;this._deathBonus=bonus;this._heirPick=[];this._gemPick=[];
+      this._relicPick=null;}
+    const grave=G.graves[G.graves.length-1];
+    const relicPrice=this.relicPrice();
+    const holyList=[].concat(Object.values(h.equip).filter(Boolean),h.bag)
+      .filter(isRelicWorthy).sort((a,b)=>itemScore(b)-itemScore(a)).slice(0,12);
+    const activeNow=G.graves.filter(x=>x.relic&&x.active);
+    const displaced=activeNow.length>=relicSlots()?activeNow[0]:null;
+    let consecHtml='<div class="h3">Weihgabe — ein legendärer Gegenstand für '+(grave?grave.name:h.name)+'</div>';
+    if(grave&&grave.relic){
+      consecHtml+='<div class="consec done"><div class="ctitle">✦ '+grave.relic.name+' ist geweiht</div>'+
+        '<div class="ceff">'+this.relicSummaryHtml(grave.relic)+'</div>'+
+        '<div class="hint" style="margin-top:4px">Wirkt ab dem nächsten Helden in jeder Generation zu '+
+        Math.round(RELIC_RATE*100)+' %.</div></div>';
+    }else if(!holyList.length){
+      consecHtml+='<div class="hint">Dieser Held trug nichts Legendäres bei sich. '+
+        'Nur legendäre Gegenstände lassen sich einem Ahnen weihen.</div>';
+    }else{
+      const sel=this._relicPick;
+      consecHtml+='<div class="hint">Wähle genau einen legendären Gegenstand. Er bleibt am Grab und '+
+        'überträgt seine Eigenschaften zu '+Math.round(RELIC_RATE*100)+' % auf alle künftigen Helden. '+
+        'Kosten: <b style="color:var(--soul)">'+relicPrice+' ✦</b></div>'+
+        '<div class="bag" style="margin-top:8px">'+
+        holyList.map((it,i)=>'<div class="cell r'+it.rar+(sel===it?" consecrated":"")+
+          '" data-holy="'+i+'" style="color:'+RARITY[it.rar].hex+'">'+
+          artImg(artIdFor(it),SLOTS[it.slot]?SLOTS[it.slot].ico:"?")+
+          (sel===it?'<span class="holy">✦</span>':"")+'</div>').join("")+'</div>';
+      if(sel){
+        consecHtml+='<div class="consec"><div class="ctitle">'+sel.name+'</div>'+
+          '<div class="ceff">'+this.relicSummaryHtml(sel)+'</div>'+
+          (displaced?'<div class="hint" style="margin-top:4px">Alle Plätze sind belegt: '+
+            displaced.relic.name+' ('+displaced.name+') ruht danach. Du kannst das in der Ahnengalerie jederzeit tauschen.</div>':"")+
+          '<div class="btnrow" style="margin-top:8px"><button class="btn p" id="dConsecrate"'+
+          (G.shards>=relicPrice?"":" disabled")+'>Weihen · '+relicPrice+' ✦</button>'+
+          (G.shards<relicPrice?'<span class="hint" style="align-self:center">Es fehlen '+
+            (relicPrice-G.shards)+' ✦</span>':"")+'</div></div>';
+      }
+    }
     const maxHeir=1+(G.meta.heir||0);
     const maxGem=1+(G.meta.gemheir||0);
     const goldHeir=Math.round(h.gold*.15*(G.meta.purse||0));
@@ -5061,6 +5534,7 @@ const UI={
       this.pathHtml(G.totalDist)+
       '<div class="hint" style="text-align:center">Davon '+(this._deathBonus||0)+' als Abschlussbonus. '+
       'Gesamt verfügbar: <b style="color:var(--soul)">'+G.shards+' \u2726</b></div>'+
+      consecHtml+
       '<div class="h3">Vermächtnis — Gegenstände ('+this._heirPick.length+" / "+maxHeir+')</div>'+
       '<div class="hint">Gute Ausrüstung ist selten geworden. Was du hier weitergibst, entscheidet, '+
       'wie weit dein nächster Held kommt — das Erbe ist der eigentliche Fortschritt.</div>'+
@@ -5094,6 +5568,37 @@ const UI={
     // Porträt des Gegners, der den letzten Schlag geführt hat
     const fcv=$("foeCv");
     if(fcv&&G.deathFoe)this.drawFoePortrait(fcv,G.deathFoe);
+    c.querySelectorAll("[data-holy]").forEach(el=>{
+      const it=holyList[+el.dataset.holy];
+      if(HOVER){el.onmouseenter=e=>this.showTooltip(it,e,null);
+        el.onmouseleave=()=>this.hideTooltip();}
+      el.onclick=()=>{
+        this.hideTooltip();
+        this._relicPick=this._relicPick===it?null:it;
+        SFX.init();SFX.socket();this.showDeath(null,null,true);
+      };
+    });
+    const cBtn=$("dConsecrate");
+    if(cBtn)cBtn.onclick=()=>{
+      const it=this._relicPick;
+      if(!it||!grave||grave.relic||G.shards<relicPrice)return;
+      G.shards-=relicPrice;
+      // Ist jeder Platz belegt, ruht die älteste wirkende Weihgabe — die neue wirkt sofort
+      const act=G.graves.filter(x=>x.relic&&x.active);
+      if(act.length>=relicSlots())act[0].active=false;
+      grave.relic=JSON.parse(JSON.stringify(it));
+      grave.active=true;
+      // Der Gegenstand bleibt am Grab und kann nicht zusätzlich vererbt werden
+      for(const sl in h.equip)if(h.equip[sl]===it)h.equip[sl]=null;
+      const bi=h.bag.indexOf(it);if(bi>=0)h.bag.splice(bi,1);
+      const hi=this._heirPick.indexOf(it);if(hi>=0)this._heirPick.splice(hi,1);
+      this._relicPick=null;
+      SFX.init();SFX.levelup();
+      this.log(it.name+" wurde "+grave.name+" geweiht und wirkt in jeder künftigen Generation.","lvl");
+      this.toast("✦ "+it.name+" geweiht");
+      G.save();this.updateBars();
+      this.showDeath(null,null,true);
+    };
     c.querySelectorAll("[data-gem2]").forEach(el=>{
       el.onclick=()=>{
         const i=+el.dataset.gem2;
