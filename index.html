@@ -8,27 +8,27 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
 /* ============================================================
-   THEME — "Midnight Arcade": tiefes Violett-Nachtblau, Dracula-nah
+   THEME — "Realmforge": warmes Bronze, dunkles Holz, heroische Fantasy
    ============================================================ */
 :root{
-  --bg:#14121f; --bg2:#0e0c17;
-  --panel:#1e1b2e; --panel2:#262238; --panel3:#302b46;
-  --line:#3a3455;
-  --text:#e8e5f6; --muted:#8d86ab; --dim:#5f5980;
-  --acc:#bd93f9; --acc2:#8be9fd;
-  --hp:#ff5566; --xp:#c39bff; --mana:#5aa9ff;
-  --gold:#ffc861; --soul:#7ef0d0;
-  --r-0:#b6b2c9; --r-1:#5aa9ff; --r-2:#f2e06a; --r-3:#ff9a3c;
-  --good:#5ce08a; --bad:#ff6b6b;
-  --font:"Courier New",ui-monospace,Menlo,Consolas,monospace;
+  --bg:#140f0b; --bg2:#0c0805;
+  --panel:#2a1d14; --panel2:#372519; --panel3:#4a3322;
+  --line:#71543b;
+  --text:#efe2c4; --muted:#bea580; --dim:#8f7355;
+  --acc:#d3a45e; --acc2:#9dc5d8;
+  --hp:#b44835; --xp:#a77d3c; --mana:#4b88a5;
+  --gold:#efc56c; --soul:#7cc5b1;
+  --r-0:#b7a08a; --r-1:#73a6c5; --r-2:#dbc372; --r-3:#d98a42;
+  --good:#7dc88e; --bad:#d36a5f;
+  --font:Georgia,"Palatino Linotype","Book Antiqua",serif;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;background:
-    radial-gradient(1200px 600px at 20% -10%,#241f3d 0%,transparent 60%),
-    radial-gradient(900px 500px at 100% 0%,#1b2440 0%,transparent 55%),
-    var(--bg);
+    radial-gradient(1200px 720px at 18% -10%,rgba(122,79,36,.34) 0%,transparent 58%),
+    radial-gradient(960px 560px at 100% 0%,rgba(82,54,28,.30) 0%,transparent 52%),
+    linear-gradient(180deg,#20150d 0%,#120c08 100%);
   color:var(--text);font-family:var(--font);font-size:14px;line-height:1.45;
   -webkit-font-smoothing:antialiased;
 }
@@ -43,21 +43,21 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc2);outl
 
 /* ---------- Topbar ---------- */
 .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
-.logo{font-weight:700;letter-spacing:2px;font-size:19px;
-  text-shadow:0 0 12px rgba(189,147,249,.55);white-space:nowrap}
-.logo span{color:var(--acc)}
+.logo{font-weight:700;letter-spacing:2px;font-size:22px;
+  color:#f3d494;text-shadow:0 1px 0 #402714,0 0 14px rgba(211,164,94,.36);white-space:nowrap}
+.logo span{color:#d8b06b}
 .topstats{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
-.chip{background:var(--panel);border:1px solid var(--line);border-radius:9px;
-  padding:4px 10px;font-size:12px;letter-spacing:.5px;white-space:nowrap}
-.chip.gold{color:var(--gold);border-color:#5a4a1e}
-.chip.soul{color:var(--soul);border-color:#1e5a4c}
+.chip{background:linear-gradient(180deg,#342217,#27190f);border:1px solid #6f5238;border-radius:9px;
+  padding:4px 10px;font-size:12px;letter-spacing:.5px;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,220,170,.06),0 3px 10px rgba(0,0,0,.22)}
+.chip.gold{color:var(--gold);border-color:#8f6b33}
+.chip.soul{color:var(--soul);border-color:#4d8479}
 .chip.soul .gain{color:#b6ffe8;font-weight:700}
 .chip.soul .csub{color:var(--muted);font-size:11px}
 .chip.soul.pulse{animation:soulpop .5s ease-out}
 @keyframes soulpop{0%{transform:scale(1)}35%{transform:scale(1.16);
   box-shadow:0 0 14px var(--soul)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.chip.soul.pulse{animation:none}}
-.chip.zone{color:var(--acc2);border-color:#1e4a5a}
+.chip.zone{color:var(--acc2);border-color:#5a7890}
 
 /* ---------- Layout ---------- */
 .grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.85fr);gap:14px;align-items:start}
@@ -65,36 +65,39 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc2);outl
 .grid>*{min-width:0}
 @media (max-width:900px){.grid{grid-template-columns:1fr}}
 
-.panel{background:linear-gradient(180deg,var(--panel) 0%,#1a172a 100%);
-  border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.panel{background:linear-gradient(180deg,#322115 0%,#21150d 100%);
+  border:1px solid #6b4e36;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,220,175,.05)}
 .ptitle{padding:8px 12px;border-bottom:1px solid var(--line);color:var(--muted);
   font-size:11px;letter-spacing:2px}
 
 /* ---------- Canvas / CRT ---------- */
-.screen{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);
-  background:#05040a;box-shadow:0 14px 40px rgba(0,0,0,.6),0 0 0 4px #100e1c inset}
+.screen{position:relative;border-radius:14px;overflow:hidden;border:1px solid #6b4e36;
+  background:#120c08;box-shadow:0 14px 40px rgba(0,0,0,.66),0 0 0 4px #24170f inset}
 .crt{position:relative;line-height:0}
 #game{width:100%;height:auto;display:block;image-rendering:pixelated;image-rendering:crisp-edges;
-  filter:drop-shadow(1.2px 0 0 rgba(255,0,64,.28)) drop-shadow(-1.2px 0 0 rgba(0,220,255,.24)) saturate(1.08)}
+  filter:contrast(1.05) saturate(.92) sepia(.24) drop-shadow(0 2px 0 rgba(0,0,0,.12))}
 .crt::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;
-  background:repeating-linear-gradient(180deg,rgba(0,0,0,.26) 0 1px,rgba(0,0,0,0) 1px 4px);
-  mix-blend-mode:multiply;opacity:.75}
+  background:
+    radial-gradient(120% 100% at 0% 0%,rgba(255,230,175,.06) 0%,transparent 45%),
+    linear-gradient(180deg,rgba(255,220,170,.04),rgba(60,35,18,.10));
+  mix-blend-mode:screen;opacity:.92}
 .crt::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;
-  background:radial-gradient(120% 90% at 50% 50%,rgba(0,0,0,0) 45%,rgba(0,0,0,.55) 88%,rgba(0,0,0,.85) 100%);
-  box-shadow:inset 0 0 60px rgba(120,80,255,.10)}
-.flicker{position:absolute;inset:0;z-index:5;pointer-events:none;background:rgba(190,160,255,.05);
-  animation:flick 5.5s steps(2) infinite;mix-blend-mode:screen}
-@keyframes flick{0%,96%{opacity:0}97%{opacity:.5}98%{opacity:.1}99%{opacity:.35}100%{opacity:0}}
+  background:radial-gradient(120% 90% at 50% 50%,rgba(0,0,0,0) 48%,rgba(19,12,8,.34) 85%,rgba(10,6,4,.70) 100%);
+  box-shadow:inset 0 0 72px rgba(176,118,52,.15)}
+.flicker{position:absolute;inset:0;z-index:5;pointer-events:none;background:
+  radial-gradient(circle at 20% 10%,rgba(255,225,185,.04) 0%,transparent 25%),transparent;
+  animation:flick 11s ease-in-out infinite;mix-blend-mode:screen}
+@keyframes flick{0%,100%{opacity:.16}50%{opacity:.04}}
 @media (prefers-reduced-motion:reduce){.flicker{animation:none}}
 
 /* ---------- Bars ---------- */
 .bars{display:grid;gap:6px;margin-top:10px}
-.bar{position:relative;height:20px;background:#100e1c;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.bar{position:relative;height:20px;background:#1a110c;border:1px solid var(--line);border-radius:7px;overflow:hidden}
 .bar i{position:absolute;inset:0 auto 0 0;width:0%;display:block;transition:width .18s ease-out}
 .bar b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   font-size:11px;font-weight:400;letter-spacing:1px;text-shadow:0 1px 2px #000;z-index:2}
-.bar.hp i{background:linear-gradient(180deg,#ff7a86,#d32a3c)}
-.bar.xp i{background:linear-gradient(180deg,#d3b0ff,#7d4fd6)}
+.bar.hp i{background:linear-gradient(180deg,#d3715d,#a43b2a)}
+.bar.xp i{background:linear-gradient(180deg,#e5c985,#b8873e)}
 .bar.xp.full{box-shadow:0 0 14px var(--acc),0 0 3px var(--acc) inset;border-color:var(--acc)}
 .bar.small{height:14px}.bar.small b{font-size:10px}
 
@@ -104,7 +107,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc2);outl
 .log .t{color:var(--dim);margin-right:6px}
 .c-dmg{color:#ff9f9f}.c-crit{color:#ffd166;font-weight:700}.c-heal{color:var(--good)}
 .c-loot{color:var(--acc2)}.c-lvl{color:var(--acc)}.c-bad{color:var(--bad)}
-.c-gold{color:var(--gold)}.c-sys{color:var(--muted)}.c-boss{color:#ff7ad9}
+.c-gold{color:var(--gold)}.c-sys{color:var(--muted)}.c-boss{color:#d7b57d}
 
 /* ---------- Tabs ---------- */
 .tabs{display:flex;gap:4px;padding:6px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -120,7 +123,7 @@ body:not(.nofa) svg.tabico{display:none}
   padding:0 3px;box-shadow:0 0 7px rgba(139,233,253,.6)}
 .tabs button.active .badge{background:#14121f;color:var(--acc2)}
 .tabs button:hover{color:var(--text);background:var(--panel2)}
-.tabs button.active{color:#14121f;background:linear-gradient(180deg,#d3b0ff,var(--acc));border-color:#d3b0ff;font-weight:700}
+.tabs button.active{color:#22150d;background:linear-gradient(180deg,#e4c790,var(--acc));border-color:#f0dab2;font-weight:700}
 .tabs button.alert:not(.active){color:var(--acc2);border-color:var(--acc2);box-shadow:0 0 10px rgba(139,233,253,.35)}
 .tabbody{position:relative;min-height:430px;max-height:min(72vh,660px);overflow-y:auto;
   overflow-x:hidden;padding:12px;min-width:0}
@@ -138,12 +141,13 @@ body:not(.nofa) svg.tabico{display:none}
 /* ---------- Item Cells ---------- */
 .paperdoll{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .bag{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:7px}
-.cell{position:relative;aspect-ratio:1;border-radius:10px;background:#15131f;
-  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
-  font-size:20px;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;user-select:none}
+.cell{position:relative;aspect-ratio:1;border-radius:10px;background:#1a120d;
+  border:1px solid #684c36;display:flex;align-items:center;justify-content:center;
+  font-size:20px;cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;user-select:none;
+  box-shadow:inset 0 1px 0 rgba(255,225,170,.05)}
 .cell:hover{transform:translateY(-2px)}
 .cell .slotname{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:8.5px;color:var(--dim);letter-spacing:.5px}
-.cell.empty{background:#131120;border-style:dashed;border-color:#332e4a}
+.cell.empty{background:#140e09;border-style:dashed;border-color:#4f3b2b}
 /* Freie Plätze zeigen ein reines Symbol — nie das Bild eines Gegenstands,
    damit nichts vorgetäuscht wird, das noch gar nicht angelegt ist. */
 .slotico{display:block;margin:auto;color:#494263;font-size:19px;line-height:1;
@@ -166,8 +170,8 @@ body:not(.nofa) svg.slotico{display:none}
 .cell.socketing{animation:pulse 1s infinite}
 @keyframes pulse{50%{box-shadow:0 0 16px var(--acc2)}}
 .gemrow{display:flex;gap:7px;flex-wrap:wrap}
-.gem{width:44px;height:44px;border-radius:10px;background:#15131f;border:1px solid var(--line);
-  display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;position:relative}
+.gem{width:44px;height:44px;border-radius:10px;background:#1a120d;border:1px solid #684c36;
+  display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;position:relative;box-shadow:inset 0 1px 0 rgba(255,225,170,.05)}
 .gem span{position:absolute;bottom:-2px;right:2px;font-size:9px;color:var(--muted)}
 .gem.sel{border-color:var(--acc2);box-shadow:0 0 12px var(--acc2)}
 
@@ -177,8 +181,8 @@ body:not(.nofa) svg.slotico{display:none}
   align-items:center;justify-content:center;padding:16px}
 .sheetwrap.on{display:flex}
 .sheet{width:min(460px,100%);max-height:86vh;overflow-y:auto;
-  background:linear-gradient(180deg,#282343,#191627);border:1px solid var(--line);
-  border-radius:16px;padding:15px 16px 16px;box-shadow:0 24px 70px rgba(0,0,0,.8)}
+  background:linear-gradient(180deg,#3a2618,#23170f);border:1px solid #6d5037;
+  border-radius:16px;padding:15px 16px 16px;box-shadow:0 24px 70px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,225,170,.06)}
 .sheet .close{position:sticky;top:-15px;float:right;background:var(--panel2);border:1px solid var(--line);
   border-radius:9px;width:30px;height:30px;line-height:1;font-size:16px;color:var(--muted);margin:-4px -4px 0 0}
 @media (max-width:640px){
@@ -186,8 +190,8 @@ body:not(.nofa) svg.slotico{display:none}
   .sheet{width:100%;max-height:88vh;border-radius:18px 18px 0 0;padding-bottom:26px}
 }
 /* ---------- Detail- und Vergleichsansicht ---------- */
-.detail{background:linear-gradient(180deg,#282343,#1d1a2e);border:1px solid var(--line);
-  border-radius:13px;padding:11px 13px;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.detail{background:linear-gradient(180deg,#3a281b,#271910);border:1px solid #6b4e36;
+  border-radius:13px;padding:11px 13px;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,225,170,.05)}
 .detail .dname{font-size:15px;font-weight:700;line-height:1.25}
 .detail .dsub{color:var(--muted);font-size:11px;margin-bottom:8px}
 .cmpgrid{display:grid;grid-template-columns:1fr 74px 62px;gap:1px 6px;font-size:12px;align-items:baseline}
@@ -281,13 +285,13 @@ body:not(.nofa) svg.slotico{display:none}
 .jsonbox{width:100%;height:150px;background:#12101c;border:1px solid var(--line);border-radius:10px;
   color:var(--text);font-family:inherit;font-size:11px;padding:8px;resize:vertical}
 /* ---------- Buttons ---------- */
-.btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;
-  transition:background .15s,border-color .15s,transform .1s}
-.btn:hover{background:var(--panel3);border-color:var(--acc)}
+.btn{background:linear-gradient(180deg,#4c3323,#342216);border:1px solid #7b5c40;border-radius:10px;padding:8px 12px;
+  color:#f0dfbf;box-shadow:inset 0 1px 0 rgba(255,227,176,.08),0 4px 10px rgba(0,0,0,.18)}
+.btn:hover{background:linear-gradient(180deg,#5a3b28,#3c2819);border-color:#d3a45e}
 .btn:active{transform:translateY(1px)}
-.btn.p{background:linear-gradient(180deg,#d3b0ff,var(--acc));color:#14121f;border-color:#d3b0ff;font-weight:700}
+.btn.p{background:linear-gradient(180deg,#e1bf82,#b88546);color:#27170e;border-color:#f1d9a4;font-weight:700}
 .btn.p:hover{filter:brightness(1.1)}
-.btn.s{background:linear-gradient(180deg,#9df3dc,#3fbfa0);color:#0e1a17;border-color:#9df3dc;font-weight:700}
+.btn.s{background:linear-gradient(180deg,#a8d4c8,#6aa594);color:#10211d;border-color:#c6ece3;font-weight:700}
 .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .btnrow{display:flex;gap:7px;flex-wrap:wrap}
 
@@ -396,7 +400,7 @@ body:not(.nofa) svg.slotico{display:none}
 .choice.sel{border-color:var(--acc);box-shadow:0 0 16px rgba(189,147,249,.4);background:#2f2749}
 .choice b{display:block;margin-bottom:3px}
 .choice small{color:var(--muted);display:block;font-size:11px;line-height:1.4}
-input[type=text]{width:100%;background:#12101c;border:1px solid var(--line);border-radius:10px;
+input[type=text]{width:100%;background:#1a120d;border:1px solid var(--line);border-radius:10px;
   padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px}
 input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px rgba(189,147,249,.3)}
 .deathstat{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:14px 0}
@@ -405,7 +409,7 @@ input[type=text]:focus{outline:none;border-color:var(--acc);box-shadow:0 0 12px 
 .deathstat small{color:var(--muted);font-size:10.5px;letter-spacing:1px}
 .hint{color:var(--dim);font-size:11px;margin-top:6px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:950;
-  background:rgba(20,17,32,.96);border:1px solid var(--acc);border-radius:11px;padding:9px 16px;
+  background:rgba(40,25,15,.96);border:1px solid var(--acc);border-radius:11px;padding:9px 16px;
   opacity:0;transition:opacity .25s,transform .25s;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
 </style>
@@ -953,10 +957,13 @@ const ITEM_ART_IDS=["weapon_sword","weapon_dagger","weapon_axe","weapon_staff","
   "armor_offhand","armor_ring","armor_amulet","armor_orb",
   "gem_ruby","gem_sapphire","gem_emerald","gem_topaz","gem_amethyst","gem_onyx",
   "rune_1","rune_2","rune_3","rune_4","rune_5","rune_6","rune_7","rune_8",
-  "misc_potion","misc_shard","misc_gold"];
+  "misc_potion","misc_shard","misc_gold",
+  "boss_relic_torwaechterschwert","boss_relic_ogerkrone","boss_relic_ascheherz","boss_relic_gierpokal",
+  "boss_relic_schwarzquellenauge","boss_relic_titanensiegel","boss_relic_leerenauge","boss_relic_nachtmutterring","boss_relic_kaldraxkrone"];
 /** Liefert den Namen der Grafik zu einem Gegenstand */
 function artIdFor(it){
   if(!it)return null;
+  if(it.bossRelic)return "boss_relic_"+it.bossKey;
   if(it.isRune)return "rune_"+(1+(it.id%8));
   if(it.slot==="weapon"){
     if(it.wtype==="axe"&&/Hammer/.test(it.base||""))return "weapon_hammer";
@@ -1196,7 +1203,7 @@ class FloatTexts{
       const k=t.life/t.max;
       const grow=t.pop?1+Math.max(0,(k-.82))*3.2:1;
       ctx.globalAlpha=clamp(k*1.4,0,1);
-      ctx.font="700 "+Math.round(t.size*grow)+"px "+"'Courier New',monospace";
+      ctx.font="700 "+Math.round(t.size*grow)+"px "+"'Palatino Linotype','Book Antiqua',Georgia,serif";
       ctx.fillStyle="#000";ctx.fillText(t.txt,(t.x|0)+1,(t.y|0)+1);
       ctx.fillStyle=t.col;ctx.fillText(t.txt,t.x|0,t.y|0);
     }
@@ -1508,6 +1515,32 @@ const BOSS_NAMES=[
   ["Malgor, Fürst der Gier",345],["Hydra der Schwarzquelle",165],["Titan des Vergessens",30],
   ["Das Auge jenseits",275],["Nachtmutter Selys",300],["Erzlich Kaldrах",190]
 ];
+const BOSS_RELICS=[
+  {bossKey:"torwaechterschwert",name:"Torwächterschwert",boss:"Grimm, der Torwächter",slot:"weapon",e:{block:10},desc:"+10 % Blockchance",art:"boss_relic_torwaechterschwert"},
+  {bossKey:"ogerkrone",name:"Krone des Ogerkönigs",boss:"Ogerkönig Bruk",slot:"head",e:{hppct:8},desc:"+8 % maximales Leben",art:"boss_relic_ogerkrone"},
+  {bossKey:"ascheherz",name:"Ascheherz von Vashek",boss:"Vashek, Drache der Asche",slot:"amulet",e:{dmgpct:10},desc:"+10 % Schaden",art:"boss_relic_ascheherz"},
+  {bossKey:"gierpokal",name:"Gierpokal Malgors",boss:"Malgor, Fürst der Gier",slot:"amulet",e:{gf:20},desc:"+20 % Goldfund",art:"boss_relic_gierpokal"},
+  {bossKey:"schwarzquellenauge",name:"Auge der Schwarzquelle",boss:"Hydra der Schwarzquelle",slot:"ring",e:{mf:20},desc:"+20 % Magiefund",art:"boss_relic_schwarzquellenauge"},
+  {bossKey:"titanensiegel",name:"Siegel des Vergessenen Titanen",boss:"Titan des Vergessens",slot:"offhand",e:{armor:50},desc:"+50 Rüstung",art:"boss_relic_titanensiegel"},
+  {bossKey:"leerenauge",name:"Auge jenseits der Leere",boss:"Das Auge jenseits",slot:"ring",e:{crit:5},desc:"+5 % kritische Chance",art:"boss_relic_leerenauge"},
+  {bossKey:"nachtmutterring",name:"Ring der Nachtmutter",boss:"Nachtmutter Selys",slot:"ring",e:{regen:0.8},desc:"+0,8 % Lebensregeneration/s",art:"boss_relic_nachtmutterring"},
+  {bossKey:"kaldraxkrone",name:"Krone des Erzlichs",boss:"Erzlich Kaldrах",slot:"head",e:{bossdmg:15},desc:"+15 % Schaden gegen Weltenbosse",art:"boss_relic_kaldraxkrone"}
+];
+function bossRelicDef(key){return BOSS_RELICS.find(x=>x.bossKey===key);}
+function bossRelicBonuses(){
+  const out={};
+  if(typeof G==="undefined"||!G.bossRelics)return out;
+  for(const key of G.bossRelics){
+    const r=bossRelicDef(key);if(!r)continue;
+    for(const k in r.e)out[k]=(out[k]||0)+r.e[k];
+  }
+  return out;
+}
+function makeBossRelic(key){
+  const r=bossRelicDef(key);
+  if(!r)return null;
+  return {id:ITEM_ID++,name:r.name,bossRelic:true,bossKey:r.bossKey,slot:r.slot,rar:3,lvl:1,stats:{},sockets:[],gems:[],uniqTxt:r.desc};
+}
 const ENEMY_AFFIXES=[
   {k:"poison",n:"Giftiger",hue:110,hp:1.0,dm:.9,d:"vergiftet bei Treffern"},
   {k:"armored",n:"Gepanzerter",hue:210,hp:1.3,dm:.95,d:"blockt häufig"},
@@ -1783,6 +1816,8 @@ class Hero extends Entity{
     }
     const R=this.relics||relicBonuses();    // geweihte Runen der Ahnen
     for(const k in R.rune)e[k]=(e[k]||0)+R.rune[k];
+    const BR=bossRelicBonuses();
+    for(const k in BR)e[k]=(e[k]||0)+BR[k];
     for(const b of this.boons||[]){         // zeitweilige Segen
       for(const k in b.e)e[k]=(e[k]||0)+b.e[k];
     }
@@ -1974,6 +2009,8 @@ class Game{
     this.weather="clear";this.weatherT=0;this.drops=[];
     this.meta={};this.shards=0;this.heirlooms=[];this.heirGems=[];this.heirGold=0;this.heirAttr=null;
     this.bossMarks=[];
+    this.mountLegacy=null;
+    this.bossRelics=[];
     this.graves=[];this.totalDist=0;
     this.stats={runs:0,bestLevel:0,bestZone:1,kills:0,bosses:0};
     this.biome=BIOMES[0];this.biomeLeft=6;this.prevBiome=null;this.blend=1;
@@ -2054,6 +2091,7 @@ class Game{
   /* ---------- Run-Steuerung ---------- */
   startRun(name,race,cls){
     this.hero=new Hero(name,race,cls,this.meta);
+    if(this.mountLegacy)this.hero.mount=JSON.parse(JSON.stringify(this.mountLegacy));
     this.hero.gold=Math.round(30*(1+(this.meta.gold||0)*.15));
     this.hero.equip.weapon=makeItem(1,"weapon",1,0);this.hero.recompute();this.hero.hp=this.hero.maxHp;
     if(this.meta.gemcutter)for(let i=0;i<2;i++)this.hero.gems.push(gemId(pick(GEMS).k,rollGemQuality(1)));
@@ -2333,19 +2371,66 @@ class Game{
     UI.renderAll();
   }
   /* ---------- Reittier ---------- */
+  grantBossRelic(e){
+    const idx=(Math.floor(e.level/10)-1)%BOSS_RELICS.length;
+    const def=BOSS_RELICS[idx];
+    if(!def||this.bossRelics.indexOf(def.bossKey)>=0)return false;
+    this.bossRelics.push(def.bossKey);
+    this.hero.recompute();
+    this.fct.add(160,52,def.name.toUpperCase(),"crit");
+    this.parts.ring(160,70,"#ff9a3c");
+    SFX.levelup();
+    UI.log("Weltenboss-Erbstück erhalten: "+def.name+" — "+def.desc+". Es wirkt für alle künftigen Ahnen.","loot");
+    return true;
+  }
   grantMount(){
     const h=this.hero;
-    if(h.mount)return;
-    h.mount=pick(MOUNTS);
-    h.recompute();
-    this.mountCd=h.mount.cd*.4;
-    UI.log("Ein "+h.mount.n+" schließt sich dir an! "+h.mount.d+" ("+h.mount.bt+")","lvl");
-    this.fct.add(160,70,h.mount.n.toUpperCase(),"crit");
-    this.parts.confetti(120,GROUND-50);
-    SFX.levelup();
+    const fresh=pick(MOUNTS.filter(m=>!h.mount||m.k!==h.mount.k));
+    if(!fresh)return;
+    // Das erste Reittier wird zur dauerhaften Blutlinien-Wahl.
+    // Bei jedem weiteren Boss-Reittier entscheidet der Spieler, welches bleibt.
+    if(!h.mount){
+      h.mount=JSON.parse(JSON.stringify(fresh));
+      this.mountLegacy=JSON.parse(JSON.stringify(h.mount));
+      h.recompute();
+      this.mountCd=h.mount.cd*.4;
+      UI.log("Ein "+h.mount.n+" schließt sich dir an! "+h.mount.d+" ("+h.mount.bt+")","lvl");
+      this.fct.add(160,70,h.mount.n.toUpperCase(),"crit");
+      this.parts.confetti(120,GROUND-50);
+      SFX.levelup();
+      return;
+    }
+    const old=JSON.parse(JSON.stringify(h.mount));
+    const choose=(mount)=>{
+      h.mount=JSON.parse(JSON.stringify(mount));
+      this.mountLegacy=JSON.parse(JSON.stringify(h.mount));
+      h.recompute();
+      this.mountCd=h.mount.cd*.4;
+      UI.log("Du behältst "+h.mount.n+" als Reittier für alle folgenden Generationen.","lvl");
+      this.fct.add(160,70,h.mount.n.toUpperCase(),"crit");
+      this.parts.confetti(120,GROUND-50);
+      SFX.levelup();
+      this.save();
+      UI.renderAll();
+    };
+    const mountCard=m=>'<div class="detail" style="cursor:pointer" data-mount-choice="'+m.k+'">'+
+      '<div class="dname" style="color:var(--acc2)">'+m.n+'</div>'+
+      '<div class="dsub">'+m.d+'</div>'+
+      '<div class="hint">'+m.bt+' · überspringt '+fmt(m.skip)+' m</div></div>';
+    UI.openSheet(
+      '<div><div class="dname">Neues Reittier erhalten!</div>'+
+      '<div class="dsub">Wähle, welches Reittier dauerhaft an deine Nachkommen vererbt wird. Das andere geht verloren.</div>'+
+      mountCard(old)+mountCard(fresh)+'</div>',
+      ()=>{
+        $("sheet").querySelectorAll("[data-mount-choice]").forEach(el=>{
+          el.onclick=()=>choose(MOUNTS.find(m=>m.k===el.dataset.mountChoice)||fresh);
+        });
+      }
+    );
   }
   canRide(){
-    return !!(this.hero&&this.hero.mount&&this.mountCd<=0&&this.state==="walk"&&this.rideT<=0);
+    return !!(this.hero&&this.hero.mount&&this.mountCd<=0&&this.state==="walk"&&this.rideT<=0&&
+      !this.bossPending&&!(this.miniLeft!==undefined&&this.miniLeft<=1));
   }
   ride(){
     if(!this.canRide())return;
@@ -2617,6 +2702,7 @@ class Game{
       h.bossKills++;this.stats.bosses++;
       // Weltenbosse werden auf dem Weg vermerkt — Minibosse ausdrücklich nicht
       this.bossMarks.push({d:Math.round(this.totalDist),n:e.name,lvl:e.level,zone:this.zone});
+      this.grantBossRelic(e);
       if(!h.mount)this.grantMount();          // der erste Boss bringt das Reittier
       this.zone++;this.stats.bestZone=Math.max(this.stats.bestZone,this.zone);
       this.changeBiome(true);
@@ -3224,7 +3310,7 @@ class Game{
         p.kind==="boon"?60:40),false,null,p.hit?.35:1);
       if(p.kind==="boon")c.restore();
       if(!p.hit&&p.x<420&&p.x>0){          // Hinweisschild über dem Objekt
-        c.font="700 7px 'Courier New',monospace";c.textAlign="center";
+        c.font="700 7px 'Palatino Linotype','Book Antiqua',Georgia,serif";c.textAlign="center";
         c.fillStyle="rgba(0,0,0,.6)";
         const w=c.measureText(p.data.n).width+6;
         c.fillRect(p.x-w/2,GROUND-sp.base*u+float-13,w,9);
@@ -3420,7 +3506,7 @@ class Game{
     c.fillRect(x-bw/2,top,bw*e.hpPct,e.boss?5:e.mini?4:3);
     c.fillStyle="rgba(255,255,255,.25)";c.fillRect(x-bw/2,top,bw*e.hpPct,1);
     if(e.boss||e.mini){
-      c.font="700 8px 'Courier New',monospace";c.textAlign="center";
+      c.font="700 8px 'Palatino Linotype','Book Antiqua',Georgia,serif";c.textAlign="center";
       c.fillStyle="#000";c.fillText(e.name,x+1,top-4);
       c.fillStyle=e.boss?"#ff7ad9":"#ffb347";c.fillText(e.name,x,top-5);
       c.textAlign="left";
@@ -3529,16 +3615,16 @@ class Game{
     c.fillStyle=col;
     c.fillRect(0,by-15,W,1.5);c.fillRect(0,by+17.5,W,1.5);
     c.textAlign="center";
-    c.font="700 8px 'Courier New',monospace";
+    c.font="700 8px 'Palatino Linotype','Book Antiqua',Georgia,serif";
     c.fillStyle=col;
     c.fillText(I.boss?"W E L T E N B O S S":"M I N I B O S S",W/2,by-4);
-    c.font="700 15px 'Courier New',monospace";
+    c.font="700 15px 'Palatino Linotype','Book Antiqua',Georgia,serif";
     c.fillStyle="#000";c.fillText(I.name,W/2+1,by+13);
     c.fillStyle="#fff8fb";c.fillText(I.name,W/2,by+12);
     c.textAlign="left";c.restore();
   }
   drawHud(c){
-    c.font="8px 'Courier New',monospace";
+    c.font="8px 'Palatino Linotype','Book Antiqua',Georgia,serif";
     const t=["Nacht","Morgen","Tag","Abend"][this.dayT<.16?0:this.dayT<.30?1:this.dayT<.72?2:this.dayT<.88?3:0];
     const wt={clear:"Klar",rain:"Regen",snow:"Schnee",fog:"Nebel"}[this.weather];
     if(this.hero&&this.hero.boons.length){       // laufende Segen unten links
@@ -3546,7 +3632,7 @@ class Game{
       for(const b of this.hero.boons){
         c.fillStyle="rgba(0,0,0,.55)";c.fillRect(bx,H-16,34,11);
         c.fillStyle=b.col;c.fillRect(bx,H-16,34*clamp(b.t/b.max,0,1),2);
-        c.font="7px 'Courier New',monospace";c.fillStyle=b.col;
+        c.font="7px 'Palatino Linotype','Book Antiqua',Georgia,serif";c.fillStyle=b.col;
         c.fillText(b.n.replace(/^Segen (der|des) /,"").slice(0,7),bx+2,H-7);
         bx+=37;
       }
@@ -3570,13 +3656,13 @@ class Game{
   async save(){
     await Store.set("ad_meta",{meta:this.meta,shards:this.shards,stats:this.stats,
       heirlooms:this.heirlooms,heirGems:this.heirGems,heirGold:this.heirGold,
-      heirAttr:this.heirAttr,graves:this.graves});
+      heirAttr:this.heirAttr,graves:this.graves,mountLegacy:this.mountLegacy,bossRelics:this.bossRelics});
     if(this.hero&&this.state!=="dead"){
       await Store.set("ad_run",{
         hero:{name:this.hero.name,race:this.hero.race,cls:this.hero.cls,level:this.hero.level,
           xp:this.hero.xp,gold:this.hero.gold,potions:this.hero.potions,skillPts:this.hero.skillPts,
           skills:this.hero.skills,equip:this.hero.equip,bag:this.hero.bag,gems:this.hero.gems,
-          base:this.hero.base,hp:this.hero.hp,kills:this.hero.kills,bossKills:this.hero.bossKills,
+          base:this.hero.base,hp:this.hero.hp,mount:this.hero.mount,kills:this.hero.kills,bossKills:this.hero.bossKills,
           shardsRun:this.hero.shardsRun,dmgDone:this.hero.dmgDone},
         zone:this.zone,dist:this.dist,lastBoss:this.lastBoss,bossPending:this.bossPending,
         totalDist:this.totalDist,bossMarks:this.bossMarks
@@ -3600,7 +3686,8 @@ class Game{
     if(m){this.meta=m.meta||{};this.shards=m.shards||0;
       this.stats=Object.assign(this.stats,m.stats||{});this.heirlooms=m.heirlooms||[];
       this.heirGems=m.heirGems||[];this.heirGold=m.heirGold||0;this.heirAttr=m.heirAttr||null;
-      this.graves=m.graves||[];}
+      this.graves=m.graves||[];
+      this.bossRelics=m.bossRelics||[];}
   }
   async loadRun(){
     const r=await Store.get("ad_run");
@@ -3609,8 +3696,9 @@ class Game{
     this.hero=new Hero(d.name,d.race,d.cls,this.meta);
     Object.assign(this.hero,{level:d.level,xp:d.xp,gold:d.gold,potions:d.potions,
       skillPts:d.skillPts,skills:d.skills||{},equip:d.equip||{},bag:d.bag||[],gems:d.gems||[],
-      base:d.base,kills:d.kills||0,bossKills:d.bossKills||0,shardsRun:d.shardsRun||0,dmgDone:d.dmgDone||0});
+      base:d.base,mount:d.mount||this.mountLegacy||null,kills:d.kills||0,bossKills:d.bossKills||0,shardsRun:d.shardsRun||0,dmgDone:d.dmgDone||0});
     this.hero.recompute();this.hero.hp=Math.max(1,d.hp||this.hero.maxHp);
+    if(!this.mountLegacy&&this.hero.mount)this.mountLegacy=JSON.parse(JSON.stringify(this.hero.mount));
     this.zone=r.zone||1;this.dist=0;this.nextEncounter=150;this.totalDist=r.totalDist||0;this.bossMarks=r.bossMarks||[];
     this.bossPending=r.bossPending||false;
     this.state="walk";this.enemy=null;
@@ -3762,6 +3850,8 @@ const UI={
     if(h.mount){
       const ready=G.canRide();
       const rest=Math.max(0,Math.ceil(G.mountCd));
+      const rideBlocked=G.bossPending?"Ein Weltenboss versperrt den Weg.":
+        (G.miniLeft!==undefined&&G.miniLeft<=1?"Ein Miniboss versperrt den Weg.":"");
       html+='<div class="h3">Reittier</div>'+
         '<div class="mountbox"><canvas id="mountCv" width="132" height="96"></canvas>'+
         '<div class="mbody"><b>'+h.mount.n+'</b>'+
@@ -3770,7 +3860,7 @@ const UI={
         '<div class="btnrow" style="margin-top:7px">'+
         '<button class="btn'+(ready?" p":"")+'" id="btnRide"'+(ready?"":" disabled")+'>'+
         (ready?"Aufsitzen \u2014 "+fmt(h.mount.skip)+" m überspringen":
-          (G.state==="walk"?"Bereit in "+rest+" s":"Nur unterwegs möglich"))+
+          (rideBlocked?rideBlocked:(G.state==="walk"?"Bereit in "+rest+" s":"Nur unterwegs möglich")))+
         '</button></div>'+
         '<small style="color:var(--dim)">Ein Ritt bringt dich eine Zone tiefer. '+
         'Die Gegner dort sind stärker.</small></div></div>';
@@ -4504,6 +4594,18 @@ const UI={
     for(const k in R.uniq){const u=UNIQUES.find(x=>x.e===k);if(u)parts.push(u.d);}
     return parts.length?parts.join(" \u00B7 "):"Noch keine Weihgabe wirkt.";
   },
+  bossRelicsHtml(){
+    const got=(G.bossRelics||[]);
+    let html='<div class="h3">Weltenboss-Erbstücke — '+got.length+' / '+BOSS_RELICS.length+'</div>'+
+      '<div class="hint">Diese einzigartigen Gegenstände werden beim ersten Sieg über den jeweiligen Weltenboss freigeschaltet und bleiben unabhängig vom Tod jedes Helden dauerhaft aktiv.</div>'+
+      '<div class="bag" style="margin-top:8px">';
+    for(const r of BOSS_RELICS){
+      const active=got.indexOf(r.bossKey)>=0;
+      html+='<div class="cell r3'+(active?' picked':'')+'" style="color:#ff9a3c;opacity:'+(active?'1':'.32')+'" title="'+r.name+' · '+r.boss+' · '+r.desc+'">'+
+        artImg(r.art,'★')+(active?'<span class="better">✓</span>':'')+'</div>';
+    }
+    return html+'</div>';
+  },
   renderAhnen(){
     const h=G.hero;
     const slots=relicSlots();
@@ -4512,7 +4614,7 @@ const UI={
       '<div class="hint" style="margin-top:4px">Wer einem gefallenen Ahnen einen Gegenstand weiht, '+
       'übernimmt dessen Eigenschaften dauerhaft in alle künftigen Läufe — zu '+
       Math.round(RELIC_RATE*100)+' %. Weitere Plätze schaltet der Ahnenschrein in der Ahnenhalle frei.</div>'+
-      '<div class="hint" style="margin-top:6px;color:var(--acc2)">'+this.relicSummaryHtml()+'</div></div>';
+      '<div class="hint" style="margin-top:6px;color:var(--acc2)">'+this.relicSummaryHtml()+'</div></div>'+this.bossRelicsHtml();
     if(!G.graves.length){
       html+='<div class="hint">Noch ist kein Held gefallen. Die Galerie füllt sich von selbst.</div>';
       $("tab-ahnen").innerHTML=html;return;
@@ -4598,7 +4700,7 @@ const UI={
   },
   relicPrice(){
     const n=G.graves.filter(g=>g.relic).length;
-    return 12+n*8;
+    return 6+n*8;
   },
   /** Auswahlfenster: welchen Gegenstand des lebenden Helden bekommt der Ahne? */
   offerRelic(idx){
@@ -4607,10 +4709,11 @@ const UI={
     const price=this.relicPrice();
     if(G.shards<price){this.toast("Zu wenig Seelensplitter.");return;}
     const items=[].concat(Object.values(h.equip).filter(Boolean),h.bag)
+      .filter(it=>it.rar===3)
       .sort((a,b)=>itemScore(b)-itemScore(a)).slice(0,24);
-    if(!items.length){this.toast("Dein Held trägt nichts, was sich weihen ließe.");return;}
+    if(!items.length){this.toast("Dein Held hat keinen legendären Gegenstand, der geweiht werden kann.");return;}
     const html='<div><div class="dname">Weihgabe für '+g.name+'</div>'+
-      '<div class="dsub">Der Gegenstand wird verbraucht. Seine Eigenschaften wirken danach '+
+      '<div class="dsub">Nur ein legendärer Gegenstand kann geweiht werden. Er wird verbraucht. Seine Eigenschaften wirken danach '+
       'in jedem künftigen Lauf zu '+Math.round(RELIC_RATE*100)+' %.</div>'+
       '<div class="hint">Kosten: '+price+' \u2726 \u00B7 vorhanden: '+G.shards+' \u2726</div>'+
       '<div class="bag" style="margin-top:9px">'+
@@ -4695,7 +4798,7 @@ const UI={
     $("btnGiveUp").onclick=()=>{if(G.state==="dead")return;G.hero.hp=0;G.heroDies();};
     $("btnWipe").onclick=async()=>{
       await Store.del("ad_meta");await Store.del("ad_run");
-      G.meta={};G.shards=0;G.heirlooms=[];G.stats={runs:0,bestLevel:0,bestZone:1,kills:0,bosses:0};
+      G.meta={};G.shards=0;G.heirlooms=[];G.bossRelics=[];G.stats={runs:0,bestLevel:0,bestZone:1,kills:0,bosses:0};
       this.toast("Alles gelöscht. Lade die Seite neu.");
     };
   },
@@ -4703,8 +4806,8 @@ const UI={
   saveBlob(){
     const h=G.hero;
     return {
-      v:3,ts:new Date().toISOString(),
-      meta:G.meta,shards:G.shards,stats:G.stats,graves:G.graves,
+      v:4,ts:new Date().toISOString(),
+      meta:G.meta,shards:G.shards,stats:G.stats,graves:G.graves,bossRelics:G.bossRelics,
       heirlooms:G.heirlooms,heirGems:G.heirGems,heirGold:G.heirGold,heirAttr:G.heirAttr,
       totalDist:Math.round(G.totalDist),zone:G.zone,bossMarks:G.bossMarks,
       hero:h?{name:h.name,race:h.race,cls:h.cls,level:h.level,xp:h.xp,gold:h.gold,
@@ -4779,7 +4882,7 @@ const UI={
         try{
           G.meta=d.meta||{};G.shards=d.shards||0;
           G.stats=Object.assign({runs:0,bestLevel:0,bestZone:1,kills:0,bosses:0},d.stats||{});
-          G.graves=d.graves||[];G.heirlooms=d.heirlooms||[];G.heirGems=d.heirGems||[];
+          G.graves=d.graves||[];G.bossRelics=d.bossRelics||[];G.heirlooms=d.heirlooms||[];G.heirGems=d.heirGems||[];
           G.heirGold=d.heirGold||0;G.heirAttr=d.heirAttr||null;
           G.totalDist=d.totalDist||0;G.zone=d.zone||1;G.bossMarks=d.bossMarks||[];
           if(d.hero){
