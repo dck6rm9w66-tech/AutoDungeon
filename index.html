@@ -1360,6 +1360,13 @@ class SpellFx{
   roots(x,col,max,pal,sz){this.f.push({k:"roots",x,col,t:0,max:max||.65,seed:Math.random()*9,pal:pal||["#4c7a2a","#6b4a2a"],sz:sz||1});}
   sword(x,col,max){this.f.push({k:"sword",x,col,t:0,max:max||1.1});}
   cross(col,max){this.f.push({k:"cross",col,t:0,max:max||.9});}
+  /** Lebensraub-Kugel auf einer quadratischen Bézierbahn mit Ease-In-Out */
+  orb(x0,y0,x1,y1,o){
+    const mx=(x0+x1)/2,my=(y0+y1)/2,dx=x1-x0,dy=y1-y0,len=Math.hypot(dx,dy)||1;
+    const nx=-dy/len,ny=dx/len;                 // Senkrechte zur Flugrichtung
+    this.f.push({k:"orb",x0,y0,x1,y1,cx:mx+nx*o.bend+o.lean,cy:my+ny*o.bend,
+      t:-(o.delay||0),max:o.max||.6,r:o.r||2,onArrive:o.onArrive});
+  }
   quake(x1,x2,col,dur,onHit){this.f.push({k:"quake",x1,x2,x:x1,col,t:0,max:dur,onHit});}
   wave(x1,x2,y,col,dur,onHit){this.f.push({k:"wave",x1,x2,x:x1,y,col,t:0,max:dur,onHit});}
   update(dt){
@@ -1396,6 +1403,8 @@ class SpellFx{
         if(f.k==="quake")this.parts.add(f.x+rnd(-6,6),GROUND-1,3,{dir:-Math.PI/2,spread:.7,
           spdMin:30,spdMax:90,lifeMin:.25,lifeMax:.55,col:pick([f.col,"#5b4a3a","#8a7a66"]),size:2,g:380});
         if(f.t>=f.max){this.f.splice(i,1);if(f.onHit)f.onHit(f.x2,GROUND-40);}
+      }else if(f.k==="orb"){
+        if(f.t>=f.max){this.f.splice(i,1);if(f.onArrive)f.onArrive();}
       }else if(f.k==="cloud"){
         if(Math.random()<.6)this.parts.add(f.x+rnd(-22,22),f.y+rnd(-14,10),1,{spdMin:2,spdMax:12,
           lifeMin:.5,lifeMax:1.1,col:pick([f.col,"#2f6b2a","#c6ff8a"]),size:3,g:-14});
@@ -1484,6 +1493,25 @@ class SpellFx{
         const g=c.createRadialGradient(f.x,f.y,0,f.x,f.y,r);
         g.addColorStop(0,"rgba(255,255,255,.95)");g.addColorStop(.35,hexA(f.col,.85));g.addColorStop(1,hexA(f.col,0));
         c.fillStyle=g;c.beginPath();c.arc(f.x,f.y,r,0,7);c.fill();
+        c.restore();
+      }else if(f.k==="orb"){
+        if(f.t<0)continue;                       // wartet noch auf ihren Start
+        const ease=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;    // easeInOutCubic
+        const at=u=>{const v=1-u;return [v*v*f.x0+2*v*u*f.cx+u*u*f.x1,v*v*f.y0+2*v*u*f.cy+u*u*f.y1];};
+        const p=ease(clamp(f.t/f.max,0,1));
+        // Fade-in am Gegner, Schrumpfen beim Eintauchen in den Helden
+        const grow=Math.min(1,f.t/.08),fin=p>.9?1-(p-.9)/.1*.6:1,r=f.r*grow*fin;
+        c.save();
+        // Schweif: drei Nachbilder etwas weiter zurück auf derselben Bahn
+        for(let j=3;j>=1;j--){
+          const q=at(ease(clamp((f.t-j*.022)/f.max,0,1)));
+          c.globalAlpha=.16*(4-j);c.fillStyle="#c1121f";
+          c.beginPath();c.arc(q[0],q[1],r*(1-j*.18),0,7);c.fill();
+        }
+        const P=at(p);
+        c.globalAlpha=1;c.shadowBlur=7;c.shadowColor="#ff4d6d";
+        c.fillStyle="#ff4d6d";c.beginPath();c.arc(P[0],P[1],r+.8,0,7);c.fill();
+        c.shadowBlur=0;c.fillStyle="#ffd0d8";c.beginPath();c.arc(P[0]-.4,P[1]-.4,r*.45,0,7);c.fill();
         c.restore();
       }else if(f.k==="slash"){
         const k=f.t/f.max,r=(14+k*6)*f.big;
@@ -2947,6 +2975,24 @@ class Game{
     for(let i=0;i<hits;i++)this.resolveHit(h,e,i>0);
     this.castRuneSpells(h,e);
   }
+  /** Lebensraub sichtbar machen: 1 bis 16 rote Kugeln fließen vom Gegner zum Helden.
+      Die Anzahl folgt der Stärke (1 % → 1 Kugel, ab 30 % → 16). Jede Kugel fliegt
+      ihre eigene, leicht andere Bogenbahn, beschleunigt sanft und bremst vor dem Helden. */
+  leechOrbs(x0,y0,leech,heal){
+    const n=clamp(Math.round(1+(leech-1)*15/29),1,16);
+    const hx=122+(this.heroOx||0),hy=GROUND-40-(this.heroOy||0);
+    for(let j=0;j<n;j++){
+      // Fächer aus Bahnen: abwechselnd über und unter der Verbindungslinie, nach außen weiter
+      const side=j%2?1:-1,spread=Math.ceil(j/2)/Math.max(1,Math.ceil((n-1)/2));
+      const bend=n===1?-18:side*(10+spread*34)-8;
+      this.spells.orb(x0+rnd(-3,3),y0+rnd(-4,4),hx+rnd(-3,3),hy+rnd(-7,7),{
+        bend,lean:rnd(-14,14),delay:j*(n>8?.028:.045),max:rnd(.52,.68),r:rnd(2.1,3),
+        onArrive:j===0?()=>{
+          if(heal>0)this.fct.add(120,GROUND-46,"+"+heal,"heal");
+          this.spells.flare(hx,hy,"#ff4d6d",8+n*.8,.25);
+        }:null});
+    }
+  }
   /* ======================= Ultimative Fähigkeiten ======================= */
   later(sec,fn){(this.tq=this.tq||[]).push({at:this.time+sec,fn});}
   /** Bewegt den Helden während einer Ultimate (Sprung, Schattenschritt) */
@@ -3335,11 +3381,9 @@ class Game{
       }else SFX.hit();
     }
     if(h.leech>0){const heal=Math.max(1,Math.round(Math.min(dmg*h.leech/100,h.maxHp*.025)));
-      if(h.hp<h.maxHp){h.hp=Math.min(h.maxHp,h.hp+heal);this.fct.add(120,GROUND-46,"+"+heal,"heal");
-        // Lebensraub: kurzes rotes Aufglimmen am Helden selbst. Bewusst kein Geschoss
-        // vom Gegner her — das sah aus wie ein gegnerischer Angriff.
-        if(Math.random()<(h.hasUniq("leech")?.6:.3))this.parts.add(122+rnd(-6,6),GROUND-30,h.hasUniq("leech")?5:3,
-          {dir:-Math.PI/2,spread:.6,spdMin:12,spdMax:34,lifeMin:.3,lifeMax:.6,col:pick(["#ff4d6d","#ffd0d8"]),size:1,g:-20,glow:1});}}
+      const healed=h.hp<h.maxHp;
+      if(healed)h.hp=Math.min(h.maxHp,h.hp+heal);
+      this.leechOrbs(ex,ey,h.leech,healed?heal:0);}
     if(extra&&!blocked){                   // Zweitschlag: Nachbild in Türkis
       this.spells.flare(ex-8,ey,"#8be9fd",16,.2);
       if(Math.random()<.5)this.fct.add(ex,ey-22,"Zweitschlag","block");
