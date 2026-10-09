@@ -992,7 +992,8 @@ const ITEM_ART_IDS=["weapon_sword","weapon_dagger","weapon_axe","weapon_staff","
   "armor_offhand","armor_ring","armor_amulet","armor_orb",
   "gem_ruby","gem_sapphire","gem_emerald","gem_topaz","gem_amethyst","gem_onyx",
   "rune_1","rune_2","rune_3","rune_4","rune_5","rune_6","rune_7","rune_8",
-  "misc_potion","misc_shard","misc_gold"];
+  "misc_potion","misc_shard","misc_gold",
+  "affix_shielded","affix_explosive"];     // Überlagerungen für Gegner-Affixe
 /** Liefert den Namen der Grafik zu einem Gegenstand */
 function artIdFor(it){
   if(!it)return null;
@@ -1103,7 +1104,8 @@ function loadAssets(){
   }
   for(const id in SPRITES){
     const img=new Image();
-    img.onload=()=>{if(img.naturalWidth>0){ASSETS[id]=img;for(const k in SPR_CACHE)delete SPR_CACHE[k];}};
+    img.onload=()=>{if(img.naturalWidth>0){ASSETS[id]=img;for(const k in SPR_CACHE)delete SPR_CACHE[k];
+      for(const k in AFFIX_CACHE)delete AFFIX_CACHE[k];}};
     img.onerror=()=>{ASSETS[id]=false;};
     img.src=ASSET_DIR+id+".png";
   }
@@ -1154,6 +1156,20 @@ function spriteBitmap(sp,pal,flash){
   }
   SPR_CACHE[key]=cv;SPR_KEYS++;
   return cv;
+}
+/* Affix-Überlagerung auf die Silhouette einer Figur beschnitten (z.B. Glutrisse).
+   Einmal je Figur gerastert und danach nur noch kopiert. */
+const AFFIX_CACHE={};
+function affixMask(id,sp,pal,hue){
+  const art=ASSETS[id];if(!art||!sp)return null;
+  const key=id+"|"+(sp.id||"?")+"|"+sp.w+"x"+sp.h;
+  if(AFFIX_CACHE[key])return AFFIX_CACHE[key];
+  const cv=document.createElement("canvas");cv.width=sp.w;cv.height=sp.h;
+  const x=cv.getContext("2d");x.imageSmoothingEnabled=false;
+  x.drawImage(art,0,0,sp.w,sp.h);
+  x.globalCompositeOperation="destination-in";
+  x.drawImage(spriteBitmap(sp,pal,null),0,0);
+  return AFFIX_CACHE[key]=cv;
 }
 /** `scale` = logische Pixel je URSPRUNGS-Pixel; die Matrix ist doppelt so fein */
 function drawSprite(ctx,sp,cx,groundY,scale,pal,flip,flash,alpha,hue){
@@ -3750,18 +3766,40 @@ class Game{
       e.model==="gespenst"||e.model==="geist"?.78:1,e.enraged?0:e.hue);
     if(e.shield>0){                    // Schildblase, wird mit dem Schild schwächer
       const k=e.shield/e.shieldMax,cy=GROUND-e.ph*.5+floaty;
-      c.save();c.globalAlpha=.18+.22*k;c.fillStyle="#5aa9ff";
-      c.beginPath();c.ellipse(x,cy,e.pw*.62,e.ph*.62,0,0,7);c.fill();
-      c.globalAlpha=.5+.4*k;c.strokeStyle="#bde0ff";c.lineWidth=1.5;
-      c.setLineDash([4,3]);c.lineDashOffset=-this.time*20;c.stroke();c.setLineDash([]);
-      c.restore();
+      const art=ASSETS.affix_shielded;
+      if(art){
+        // Kuppel aus assets/affix_shielded.png, etwas größer als die Figur
+        const bw=Math.max(e.pw,e.ph*.8)*1.32,bh=e.ph*1.3;
+        c.save();c.imageSmoothingEnabled=false;
+        c.globalAlpha=(.45+.5*k)*(.88+.12*Math.sin(this.time*4));
+        const by=GROUND+floaty+3-bh;          // Kuppel steht auf dem Boden
+        c.drawImage(art,Math.round(x-bw/2),Math.round(by),Math.round(bw),Math.round(bh));
+        c.restore();
+      }else{
+        c.save();c.globalAlpha=.18+.22*k;c.fillStyle="#5aa9ff";
+        c.beginPath();c.ellipse(x,cy,e.pw*.62,e.ph*.62,0,0,7);c.fill();
+        c.globalAlpha=.5+.4*k;c.strokeStyle="#bde0ff";c.lineWidth=1.5;
+        c.setLineDash([4,3]);c.lineDashOffset=-this.time*20;c.stroke();c.setLineDash([]);
+        c.restore();
+      }
     }
-    if(e.affix&&e.affix.k==="explosive"){   // pulsierender Glutkern warnt vor dem Bersten
+    if(e.affix&&e.affix.k==="explosive"){   // Glutrisse und pulsierender Kern warnen vor dem Bersten
       const p=.5+.5*Math.sin(this.time*(e.hpPct<.35?16:6));
-      c.save();c.globalAlpha=.25+.35*p;
-      const g=c.createRadialGradient(x,GROUND-e.ph*.5+floaty,0,x,GROUND-e.ph*.5+floaty,e.pw*.6);
+      const cy=GROUND-e.ph*.5+floaty;
+      const cracks=affixMask("affix_explosive",sp,e.pal,e.enraged?0:e.hue);
+      if(cracks){
+        // Risse liegen nur auf dem Körper: gleiche Lage und Spiegelung wie die Figur
+        const u=e.scale/(sp.f||1),w=sp.w*u,hh=sp.h*u;
+        const x0=Math.round((x-w/2)*2)/2,y0=Math.round((GROUND-bob+floaty-sp.base*u)*2)/2;
+        c.save();c.imageSmoothingEnabled=false;
+        c.globalAlpha=.55+.45*p;
+        c.translate(x0+w,y0);c.scale(-1,1);c.drawImage(cracks,0,0,w,hh);
+        c.restore();
+      }
+      c.save();c.globalAlpha=(cracks?.12:.25)+(cracks?.2:.35)*p;
+      const g=c.createRadialGradient(x,cy,0,x,cy,e.pw*.6);
       g.addColorStop(0,"rgba(255,140,40,.9)");g.addColorStop(1,"rgba(255,60,20,0)");
-      c.fillStyle=g;c.beginPath();c.arc(x,GROUND-e.ph*.5+floaty,e.pw*.6,0,7);c.fill();c.restore();
+      c.fillStyle=g;c.beginPath();c.arc(x,cy,e.pw*.6,0,7);c.fill();c.restore();
     }
     if(e.chill>0){                     // Eisschicht am Boden und kalter Schimmer
       const a=clamp(e.chill,0,1);
