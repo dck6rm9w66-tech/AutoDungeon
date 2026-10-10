@@ -1169,13 +1169,81 @@ const TINT_SAT=34;
 const TINT_LIGHT=52;
 /** Beherrscht dieser Browser Canvas-Filter? Sonst greift die Rückfallebene. */
 const CAN_FILTER=(function(){
+  // Nicht nur die Eigenschaft prüfen: Safari vor Version 18 speichert c.filter als
+  // gewöhnliche Eigenschaft und ignoriert sie beim Zeichnen. Deshalb wird ein rotes
+  // Pixel mit Farbtondrehung gezeichnet und nachgesehen, ob es wirklich grün wird.
   try{
-    const c=document.createElement("canvas").getContext("2d");
-    c.filter="hue-rotate(90deg)";
-    return c.filter!=="none"&&c.filter!=="";
+    const cv=document.createElement("canvas");cv.width=cv.height=2;
+    const c=cv.getContext("2d");
+    const src=document.createElement("canvas");src.width=src.height=2;
+    const s=src.getContext("2d");s.fillStyle="#ff0000";s.fillRect(0,0,2,2);
+    c.filter="hue-rotate(120deg)";c.drawImage(src,0,0);
+    const d=c.getImageData(0,0,1,1).data;
+    return d[1]>d[0]+40;
   }catch(e){return false;}
 })();
+/* Manche Browser wenden Canvas-Filter nur auf Canvas-Quellen an, nicht auf Bilder.
+   Deshalb zusätzlich mit einem echten Bild prüfen (rotes Pixel als data:-PNG). */
+let FILTER_OK=CAN_FILTER;
+(function(){
+  if(!CAN_FILTER)return;
+  try{
+    const src=document.createElement("canvas");src.width=src.height=2;
+    const s=src.getContext("2d");s.fillStyle="#ff0000";s.fillRect(0,0,2,2);
+    const img=new Image();
+    img.onload=()=>{try{
+      const cv=document.createElement("canvas");cv.width=cv.height=2;const c=cv.getContext("2d");
+      c.filter="hue-rotate(120deg)";c.drawImage(img,0,0);const d=c.getImageData(0,0,1,1).data;
+      FILTER_OK=d[1]>d[0]+40;if(!FILTER_OK)for(const k in SPR_CACHE)delete SPR_CACHE[k];
+    }catch(e){FILTER_OK=false;}};
+    img.src=src.toDataURL();
+  }catch(e){FILTER_OK=false;}
+})();
+/* Färbt eine Sprite-Kachel Pixel für Pixel um — funktioniert in jedem Browser.
+   rot = Farbtondrehung in Grad, fx = Varianten-Filter (s, b, c), hue = Zielfarbton.
+   Gibt false zurück, wenn der Browser das Auslesen verweigert (Seite über file://). */
+function recolorPixels(x,w,h,rot,fx,hue){
+  let img;
+  try{img=x.getImageData(0,0,w,h);}catch(e){STATS.readErr=(e&&e.name)||"Fehler";return false;}
+  const d=img.data;
+  const sat=(fx&&fx.s?fx.s:1)*(fx&&fx.c?1:TINT_SATURATE),bri=fx&&fx.b?fx.b:1,col=fx&&fx.c?fx.c:0;
+  // Graue Pixel nehmen sonst keinen Farbton an — sie werden automatisch leicht eingefärbt.
+  // Abschalten je Variante mit c:0 in VARIANT_FX (z. B. bewusst weiße Skelette).
+  const autoTint=!(fx&&fx.c===0),AUTO=.62,GREY=.16;
+  STATS.recolored=(STATS.recolored||0)+1;
+  const h2r=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;};
+  const hsl2rgb=(H,S,L)=>{if(S<=0)return [L,L,L];const q=L<.5?L*(1+S):L+S-L*S,p=2*L-q;
+    return [h2r(p,q,H+1/3),h2r(p,q,H),h2r(p,q,H-1/3)];};
+  const tH=((hue%360)+360)%360/360;
+  for(let i=0;i<d.length;i+=4){
+    if(d[i+3]===0)continue;
+    let r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),L=(mx+mn)/2;
+    let H=0,S=0;
+    if(mx!==mn){const dd=mx-mn;S=L>.5?dd/(2-mx-mn):dd/(mx+mn);
+      H=mx===r?(g-b)/dd+(g<b?6:0):mx===g?(b-r)/dd+2:(r-g)/dd+4;H/=6;}
+    let o;
+    if(col){
+      // Einfärben: graue/weiße Flächen nehmen den Zielfarbton an, behalten ihre Helligkeit
+      const t=hsl2rgb(tH,Math.min(1,.38+.3*col),L*(1-.12*col));
+      o=[r+(t[0]-r)*col,g+(t[1]-g)*col,b+(t[2]-b)*col];
+    }else if(autoTint&&S<GREY){
+      // Graustufen: Zielfarbton annehmen, je grauer desto stärker; Helligkeit bleibt
+      const k=AUTO*(1-S/GREY)*Math.min(1,sat/TINT_SATURATE);   // gewollt blasse Varianten bleiben blass
+      const t=hsl2rgb(tH,.5,L*.94),g0=hsl2rgb((H+rot/360+1)%1,Math.min(1,S*sat),L);
+      o=[g0[0]+(t[0]-g0[0])*k,g0[1]+(t[1]-g0[1])*k,g0[2]+(t[2]-g0[2])*k];
+    }else{
+      // Drehen: jede Farbe wandert um denselben Winkel, Abstände bleiben erhalten
+      o=hsl2rgb((H+rot/360+1)%1,Math.min(1,S*sat),L);
+    }
+    d[i]=Math.min(255,o[0]*bri*255);d[i+1]=Math.min(255,o[1]*bri*255);d[i+2]=Math.min(255,o[2]*bri*255);
+  }
+  x.putImageData(img,0,0);
+  return true;
+}
 const ASSETS={};                      // id -> Image | false (nicht vorhanden)
+const STATS={};                       // Diagnose: auf welchem Weg Sprites gefärbt wurden
+const GAME_VERSION="2026-10-10";
 /* Symbole für Waffen, Rüstung, Edelsteine, Runen und Verbrauchsgüter */
 const ITEM_ART_IDS=["weapon_sword","weapon_dagger","weapon_axe","weapon_staff","weapon_bow",
   "weapon_hammer","armor_head","armor_chest","armor_hands","armor_legs","armor_feet",
@@ -1285,20 +1353,27 @@ function artImg(id,fallback,cls){
   if(ASSETS[id])return '<img class="ico'+(cls?" "+cls:"")+'" src="'+ASSET_DIR+id+'.png" alt="">';
   return '<span class="ico'+(cls?" "+cls:"")+'">'+fallback+'</span>';
 }
+/** Lädt ein PNG. Zuerst als Daten (fetch → Blob): so gehört das Bild sicher zur
+    eigenen Seite und seine Pixel lassen sich zum Umfärben lesen — auch wenn der
+    Webspace die Dateien über eine Weiterleitung oder ein CDN ausliefert.
+    Klappt das nicht (z. B. Seite als Datei geöffnet), wird es normal geladen. */
+function loadPng(id,ok,fail){
+  const url=ASSET_DIR+id+".png";
+  const plain=()=>{const img=new Image();
+    img.onload=()=>{if(img.naturalWidth>0){STATS.viaImg=(STATS.viaImg||0)+1;ok(img);}else fail();};
+    img.onerror=fail;img.src=url;};
+  if(!window.fetch||!window.URL||location.protocol==="file:"){plain();return;}
+  fetch(url).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.blob();})
+    .then(b=>{const img=new Image();
+      img.onload=()=>{if(img.naturalWidth>0){STATS.viaBlob=(STATS.viaBlob||0)+1;ok(img);}else plain();};
+      img.onerror=plain;img.src=URL.createObjectURL(b);})
+    .catch(e=>{STATS.fetchErr=String(e&&e.message||e);plain();});
+}
 function loadAssets(){
-  for(const id of ITEM_ART_IDS){
-    const img=new Image();
-    img.onload=()=>{if(img.naturalWidth>0)ASSETS[id]=img;};
-    img.onerror=()=>{ASSETS[id]=false;};
-    img.src=ASSET_DIR+id+".png";
-  }
-  for(const id in SPRITES){
-    const img=new Image();
-    img.onload=()=>{if(img.naturalWidth>0){ASSETS[id]=img;for(const k in SPR_CACHE)delete SPR_CACHE[k];
-      for(const k in AFFIX_CACHE)delete AFFIX_CACHE[k];}};
-    img.onerror=()=>{ASSETS[id]=false;};
-    img.src=ASSET_DIR+id+".png";
-  }
+  for(const id of ITEM_ART_IDS)loadPng(id,img=>{ASSETS[id]=img;},()=>{ASSETS[id]=false;});
+  for(const id in SPRITES)loadPng(id,img=>{ASSETS[id]=img;
+      for(const k in SPR_CACHE)delete SPR_CACHE[k];for(const k in AFFIX_CACHE)delete AFFIX_CACHE[k];},
+    ()=>{ASSETS[id]=false;});
 }
 /* Sprites werden einmal je Farbvariante in ein Offscreen-Canvas gerastert und
    danach nur noch als Bild kopiert — sonst kostet die vierfache Pixelzahl zu viel. */
@@ -1314,24 +1389,40 @@ function spriteBitmap(sp,pal,flash){
   const x=cv.getContext("2d");
   const art=ASSETS[sp.id];
   if(art){
-    if(sp._rot&&CAN_FILTER){
-      // Farbtondrehung: alle Farben der Zeichnung wandern um denselben Winkel
-      // Einfärbung (graue Sprites) ersetzt die Drehung, sonst Drehung plus Helligkeit/Sättigung
+    const needs=!!(sp._rot||sp._fx);
+    const hueAbs=((sp._rot||0)+ASSET_HUE+360)%360;
+    x.drawImage(art,0,0,sp.w,sp.h);
+    if(needs&&recolorPixels(x,sp.w,sp.h,sp._rot||0,sp._fx,hueAbs)){
+      // Pixelgenau umgefärbt — der Normalfall in jedem Browser
+    }else if(needs&&FILTER_OK){
+      // Seite über file:// geöffnet (Pixel nicht lesbar): Canvas-Filter, wo er wirklich wirkt
+      x.clearRect(0,0,sp.w,sp.h);
       x.filter=(sp._fx&&sp._fx.c)?fxs:
-        "hue-rotate("+sp._rot+"deg) saturate("+TINT_SATURATE+")"+(fxs?" "+fxs:"");
+        "hue-rotate("+(sp._rot||0)+"deg) saturate("+TINT_SATURATE+")"+(fxs?" "+fxs:"");
       x.drawImage(art,0,0,sp.w,sp.h);
       x.filter="none";
-    }else if(sp._rot){
-      // Ohne Filterunterstützung: Farbauftrag über den Kompositionsmodus
-      x.drawImage(art,0,0,sp.w,sp.h);
-      x.globalCompositeOperation="color";
-      x.fillStyle=sp._tint;
-      x.fillRect(0,0,sp.w,sp.h);
+      if(!(sp._fx&&sp._fx.c===0)){         // Graustufen sichtbar tönen (Pixel hier nicht lesbar)
+        x.globalCompositeOperation="source-atop";x.globalAlpha=.28;
+        x.fillStyle=hsl(hueAbs,55,55);x.globalCompositeOperation="color";x.fillRect(0,0,sp.w,sp.h);
+        x.globalAlpha=1;x.globalCompositeOperation="destination-in";x.drawImage(art,0,0,sp.w,sp.h);
+        x.globalCompositeOperation="source-over";
+      }
+      STATS.filtered=(STATS.filtered||0)+1;
+    }else if(needs){
+      STATS.blended=(STATS.blended||0)+1;
+      // Letzte Rückfallebene: Farbton per Mischmodus "hue" (Sättigung und Helligkeit bleiben),
+      // Helligkeit und Einfärbung über Multiplizieren/Aufhellen
+      x.globalCompositeOperation="hue";
+      x.fillStyle=hsl(hueAbs,70,50);x.fillRect(0,0,sp.w,sp.h);
+      if(!(sp._fx&&sp._fx.c===0)){x.globalCompositeOperation="color";x.globalAlpha=.28;
+        x.fillStyle=hsl(hueAbs,55,55);x.fillRect(0,0,sp.w,sp.h);x.globalAlpha=1;}
+      const f=sp._fx||{};
+      if(f.c){x.globalCompositeOperation="multiply";x.globalAlpha=f.c*.55;x.fillStyle=hsl(hueAbs,60,60);x.fillRect(0,0,sp.w,sp.h);x.globalAlpha=1;}
+      if(f.b&&f.b<1){x.globalCompositeOperation="multiply";x.globalAlpha=1-f.b;x.fillStyle="#000";x.fillRect(0,0,sp.w,sp.h);x.globalAlpha=1;}
+      if(f.b&&f.b>1){x.globalCompositeOperation="screen";x.globalAlpha=Math.min(.6,f.b-1);x.fillStyle="#fff";x.fillRect(0,0,sp.w,sp.h);x.globalAlpha=1;}
       x.globalCompositeOperation="destination-in";
       x.drawImage(art,0,0,sp.w,sp.h);
       x.globalCompositeOperation="source-over";
-    }else{
-      x.drawImage(art,0,0,sp.w,sp.h);
     }
     if(flash){x.globalCompositeOperation="source-atop";x.fillStyle=flash;x.fillRect(0,0,sp.w,sp.h);
       x.globalCompositeOperation="source-over";}
@@ -2053,12 +2144,12 @@ const VARIANT_FX={
   "Würgeranke":{s:1.1},"Blutblüte":{s:1.3,b:1.05},"Sporenkappe":{h:35,s:.8,b:.9},
   "Blutfledermaus":{s:1.2},"Harpyie":{b:1.15},"Sturmkrähe":{s:.45,b:.6},
   "Aufständischer":{s:1.15},"Bergrebell":{s:1.05,b:.85},"Freischärler":{h:170,s:1.1,b:1.1},
-  "Skelettkrieger":{b:1.05},"Knochenbogner":{h:95,c:.75,b:.88},"Grabwächter":{h:225,c:.95,b:.8},
+  "Skelettkrieger":{b:1.05,c:0},"Knochenbogner":{h:95,c:.75,b:.88},"Grabwächter":{h:225,c:.95,b:.8},
   "Blutkultist":{s:1.25},"Dunkelprediger":{s:.8,b:.75},"Aschenmönch":{s:.6,b:1.05},
   "Steingolem":{s:.45,b:1.35},"Eisengolem":{s:.35,b:.85},"Kristallgolem":{h:178,s:1.7,b:1.4},
   "Waldgeist":{s:1.15},"Nebelwandler":{s:.55,b:1.2},"Irrlicht":{h:55,s:1.4,b:1.25},
   "Feuerelementar":{s:1.3},"Frostelementar":{b:1.15},"Sturmelementar":{s:1.2},"Erdelementar":{s:.8,b:.85},
-  "Klagegeist":{h:205,c:.95,b:.85},"Wehklage":{h:125,c:.7,b:.92},"Bleicher Schemen":{b:1.1},
+  "Klagegeist":{h:205,c:.95,b:.85},"Wehklage":{h:125,c:.7,b:.92},"Bleicher Schemen":{b:1.1,c:0},
   "Grabwurm":{s:.8,b:.85},"Blutegel":{s:1.3},"Nervenfresser":{h:290,s:1.1},
   "Missgestalt":{s:1.1},"Fleischklumpen":{s:1.2,b:1.1},"Verwachsener":{s:.7,b:.8},
   "Baron der Asche":{s:.5,b:.8},"Tyrann":{s:1.2},"Blutfürst":{s:1.35,b:.95},
@@ -5127,6 +5218,45 @@ const UI={
       const c=$("chipPot");c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop");
     };
   },
+  /** Zeigt, ob die PNG-Grafiken gefunden wurden und wie die Gegner gefärbt werden */
+  gfxDiagHtml(){
+    const models=BESTIARY.map(b=>b.m);
+    const loaded=models.filter(m=>ASSETS[m]).length,missing=models.filter(m=>ASSETS[m]===false);
+    const how=STATS.recolored?"pixelgenau":STATS.filtered?"Canvas-Filter":
+      STATS.blended?"Mischmodus (Rückfallebene)":"noch kein Gegner gezeichnet";
+    const row=(a,b)=>'<div class="row"><span>'+a+'</span><b>'+b+'</b></div>';
+    const load=(STATS.viaBlob?STATS.viaBlob+" als Daten":"")+(STATS.viaBlob&&STATS.viaImg?", ":"")+
+      (STATS.viaImg?STATS.viaImg+" als Bild":"");
+    setTimeout(()=>this.drawColorTest(),0);
+    return row("Gegner-PNGs aus assets/",loaded+" / "+models.length)+
+      row("Färbung der Gegner",how)+
+      (load?row("Geladen",load):"")+
+      (STATS.readErr?row("Pixel lesbar","nein ("+STATS.readErr+")"):"")+
+      (STATS.fetchErr?row("Datenabruf",STATS.fetchErr):"")+
+      row("Canvas-Filter",FILTER_OK?"wirkt":"nicht verfügbar")+
+      row("Version",GAME_VERSION)+
+      '<div class="hint" style="margin-top:6px">Farbtest — dieselbe Figur in vier Varianten. '+
+      'Sehen alle gleich aus, wirkt die Färbung auf diesem Gerät nicht:</div>'+
+      '<canvas id="colorTest" width="320" height="90" style="width:100%;max-width:320px;image-rendering:pixelated;'+
+      'background:#15131f;border:1px solid var(--line);border-radius:10px;margin:4px 0 6px"></canvas>'+
+      (missing.length?'<div class="hint" style="color:var(--bad)">Nicht gefunden: '+missing.join(", ")+
+        '.png — liegt der Ordner <b>assets</b> (genau so geschrieben) neben index.html?</div>':
+       loaded===0?'<div class="hint">Grafiken werden noch geladen …</div>':"");
+  },
+  /** Zeichnet eine Gegnerfigur in vier Farbvarianten — Sichtprüfung auf dem Gerät */
+  drawColorTest(){
+    const cv=$("colorTest");if(!cv)return;
+    const c=cv.getContext("2d");c.imageSmoothingEnabled=false;
+    c.clearRect(0,0,cv.width,cv.height);
+    const m=["beast","slime","golem","humanoid"].find(k=>ASSETS[k])||"beast";
+    const sp=SPRITES[m];if(!sp)return;
+    const sets=[[null,null,"Original"],[5,{s:1.2},"Rot"],[120,null,"Grün"],[275,{b:.85},"Violett"]];
+    sets.forEach((q,i)=>{
+      const x=40+i*80,u=Math.min(2.2,70/sp.base*(sp.f||1));
+      drawSprite(c,sp,x,72,u,palette(q[0]===null?ASSET_HUE:q[0],40),false,null,1,q[0]===null?null:q[0],q[1]);
+      c.fillStyle="#a99fd0";c.font="10px monospace";c.textAlign="center";c.fillText(q[2],x,86);
+    });
+  },
   /** Splash zeigen; Antippen, Klick oder Taste überspringt, sonst nach `ms` weiter */
   showSplash(done,ms){
     const sp=$("splash");
@@ -6413,6 +6543,7 @@ const UI={
     const h=G.hero,s=G.stats;
     const row=(a,b)=>'<div class="row"><span>'+a+'</span><b>'+b+'</b></div>';
     $("tab-sys").innerHTML=
+      '<div class="h3">Grafik</div>'+this.gfxDiagHtml()+
       '<div class="h3">Spielstand</div>'+
       '<div class="btnrow"><button class="btn p" id="btnSave">Speichern (JSON-Datei)</button>'+
       '<button class="btn" id="btnImport">JSON einspielen</button>'+
