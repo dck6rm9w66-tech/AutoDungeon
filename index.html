@@ -2772,6 +2772,7 @@ class Game{
     this.zone=1;this.dist=0;this.nextEncounter=170;
     this.weather="clear";this.weatherT=0;this.drops=[];
     this.meta={};this.shards=0;this.heirlooms=[];this.heirGems=[];this.heirGold=0;this.heirAttr=null;
+    this.legacyMount=null;   // Reittier eines Weltenbosses — geht an jeden Nachfolger über
     this.bossMarks=[];
     this.graves=[];this.totalDist=0;
     this.stats={runs:0,bestLevel:0,bestZone:1,kills:0,bosses:0};
@@ -2876,7 +2877,10 @@ class Game{
     this.zone=1;this.dist=0;this.nextEncounter=130;this.enemy=null;this.enemies=[];
     this.seenTypes={};
     this.totalDist=0;this.bossMarks=[];this.props=[];this.propT=rnd(10,20);
-    this.mountCd=0;this.rideT=0;
+    this.mountCd=0;this.rideT=0;this.rideQueued=false;
+    // Besondere Funde der Ahnen: das Reittier eines Weltenbosses folgt jedem Nachfolger
+    const lm=this.legacyMount&&MOUNTS.find(m=>m.k===this.legacyMount);
+    if(lm){this.hero.mount=lm;this.hero.recompute();this.hero.hp=this.hero.maxHp;this.mountCd=lm.cd*.4;}
     // Die Umgebung überdauert den Tod: ein neuer Held beginnt dort, wo der alte fiel
     if(this.biomeLeft<=0)this.changeBiome(true);
     this.shop=null;   // Händlerwaren richten sich nach dem neuen Helden
@@ -2894,6 +2898,7 @@ class Game{
     if(this._heirGemN)UI.log("Dazu "+this._heirGemN+" vererbte Seelensteine.","loot");
     if(this._heirAttrN)UI.log("Das Blut deiner Ahnen schenkt dir "+this._heirAttrN+" Attributpunkte.","lvl");
     if(this._heirGoldN)UI.log("Der Erbbeutel enthält "+fmt(this._heirGoldN)+" Gold.","gold");
+    if(this.hero.mount)UI.log("Das "+this.hero.mount.n+" der Ahnen begleitet auch "+name+". ("+this.hero.mount.bt+")","lvl");
     this.autoEquipBest();
     UI.renderAll();
     SFX.init();
@@ -2997,6 +3002,8 @@ class Game{
     if(h.ultShieldT>0){h.ultShieldT-=dt;if(h.ultShieldT<=0){h.ultShield=0;UI.log("Der Heilige Schild verblasst.","sys");}
       else if(h.ultShieldRegen)h.hp=Math.min(h.maxHp,h.hp+h.maxHp*.02*dt);}
 
+    if(h.mount&&!this.legacyMount)this.legacyMount=h.mount.k;   // ältere Spielstände
+    if(this.rideQueued&&this.canRide()){this.rideQueued=false;this.ride();}
     if(this.state==="walk"){
       const spd=52;
       this.scroll+=spd*dt;this.dist+=spd*dt;
@@ -3078,7 +3085,7 @@ class Game{
     }
     this.enemy=this.target();
     if(h.lunge>0)h.lunge-=dt*4;
-    UI.updateBars();UI.updateUlt();UI.updateDef();
+    UI.updateBars();UI.updateUlt();UI.updateDef();UI.updateRideBtn();
   }
   doShake(t,mag){if(t>this.shake){this.shake=t;this.shakeMag=mag;}}
   /* ---------- Weltobjekte: Fallen, Brunnen, Segen ---------- */
@@ -3189,12 +3196,22 @@ class Game{
     const h=this.hero;
     if(h.mount)return;
     h.mount=pick(MOUNTS);
+    this.legacyMount=h.mount.k;            // ab jetzt erbt jeder Nachfolger dieses Tier
     h.recompute();
     this.mountCd=h.mount.cd*.4;
     UI.log("Ein "+h.mount.n+" schließt sich dir an! "+h.mount.d+" ("+h.mount.bt+")","lvl");
     this.fct.add(160,70,h.mount.n.toUpperCase(),"crit");
     this.parts.confetti(120,GROUND-50);
     SFX.levelup();
+  }
+  /** Reitet sofort, wenn möglich — im Kampf wird der Ritt für danach vorgemerkt */
+  rideOrQueue(){
+    const h=this.hero;if(!h||!h.mount||this.state==="dead")return false;
+    if(this.canRide()){this.ride();return true;}
+    if(this.mountCd>0){UI.toast(h.mount.n+" ist in "+Math.ceil(this.mountCd)+" s bereit.");return false;}
+    this.rideQueued=!this.rideQueued;
+    UI.toast(this.rideQueued?"Nach dem Kampf sitzt du auf.":"Ritt abgebrochen.");
+    return true;
   }
   canRide(){
     return !!(this.hero&&this.hero.mount&&this.mountCd<=0&&this.state==="walk"&&this.rideT<=0);
@@ -5128,14 +5145,16 @@ class Game{
     await Store.set("ad_meta",{meta:this.meta,shards:this.shards,stats:this.stats,
       heirlooms:this.heirlooms,heirGems:this.heirGems,heirGold:this.heirGold,
       heirAttr:this.heirAttr,graves:this.graves,
-      world:{biome:this.biome&&this.biome.k,left:this.biomeLeft,dayT:this.dayT,weather:this.weather}});
+      world:{biome:this.biome&&this.biome.k,left:this.biomeLeft,dayT:this.dayT,weather:this.weather},
+      legacyMount:this.legacyMount});
     if(this.hero&&this.state!=="dead"){
       await Store.set("ad_run",{
         hero:{name:this.hero.name,race:this.hero.race,cls:this.hero.cls,level:this.hero.level,
           xp:this.hero.xp,gold:this.hero.gold,potions:this.hero.potions,skillPts:this.hero.skillPts,
           skills:this.hero.skills,equip:this.hero.equip,bag:this.hero.bag,gems:this.hero.gems,
           base:this.hero.base,hp:this.hero.hp,kills:this.hero.kills,bossKills:this.hero.bossKills,
-          shardsRun:this.hero.shardsRun,dmgDone:this.hero.dmgDone,ult:this.hero.ult,ultCd:this.hero.ultCd},
+          shardsRun:this.hero.shardsRun,dmgDone:this.hero.dmgDone,ult:this.hero.ult,ultCd:this.hero.ultCd,
+          mount:this.hero.mount?this.hero.mount.k:null},
         zone:this.zone,dist:this.dist,lastBoss:this.lastBoss,bossPending:this.bossPending,
         totalDist:this.totalDist,bossMarks:this.bossMarks
       });
@@ -5160,6 +5179,7 @@ class Game{
       this.heirGems=m.heirGems||[];this.heirGold=m.heirGold||0;this.heirAttr=m.heirAttr||null;
       this.graves=m.graves||[];
       // Welt fortsetzen: gleiche Umgebung, Tageszeit und Wetter wie beim letzten Mal
+      this.legacyMount=m.legacyMount||null;
       const w=m.world,b=w&&BIOMES.find(x=>x.k===w.biome);
       if(b&&w.left>0){this.biome=b;this.biomeLeft=w.left;this.layers=this.buildLayers();
         if(typeof w.dayT==="number")this.dayT=w.dayT;
@@ -5174,6 +5194,9 @@ class Game{
       skillPts:d.skillPts,skills:d.skills||{},equip:d.equip||{},bag:d.bag||[],gems:d.gems||[],
       base:d.base,kills:d.kills||0,bossKills:d.bossKills||0,shardsRun:d.shardsRun||0,dmgDone:d.dmgDone||0,
       ult:d.ult||{rank:1,path:null},ultCd:d.ultCd||0});
+    // Reittier: gespeicherter Held oder Erbe der Ahnen
+    const lm=MOUNTS.find(m=>m.k===(d.mount||this.legacyMount));
+    if(lm){this.hero.mount=lm;this.mountCd=0;}
     this.hero.recompute();this.hero.hp=Math.max(1,d.hp||this.hero.maxHp);
     this.zone=r.zone||1;this.dist=0;this.nextEncounter=150;this.totalDist=r.totalDist||0;this.bossMarks=r.bossMarks||[];
     this.bossPending=r.bossPending||false;
@@ -5218,44 +5241,20 @@ const UI={
       const c=$("chipPot");c.classList.remove("pop");void c.offsetWidth;c.classList.add("pop");
     };
   },
-  /** Zeigt, ob die PNG-Grafiken gefunden wurden und wie die Gegner gefärbt werden */
-  gfxDiagHtml(){
-    const models=BESTIARY.map(b=>b.m);
-    const loaded=models.filter(m=>ASSETS[m]).length,missing=models.filter(m=>ASSETS[m]===false);
-    const how=STATS.recolored?"pixelgenau":STATS.filtered?"Canvas-Filter":
-      STATS.blended?"Mischmodus (Rückfallebene)":"noch kein Gegner gezeichnet";
-    const row=(a,b)=>'<div class="row"><span>'+a+'</span><b>'+b+'</b></div>';
-    const load=(STATS.viaBlob?STATS.viaBlob+" als Daten":"")+(STATS.viaBlob&&STATS.viaImg?", ":"")+
-      (STATS.viaImg?STATS.viaImg+" als Bild":"");
-    setTimeout(()=>this.drawColorTest(),0);
-    return row("Gegner-PNGs aus assets/",loaded+" / "+models.length)+
-      row("Färbung der Gegner",how)+
-      (load?row("Geladen",load):"")+
-      (STATS.readErr?row("Pixel lesbar","nein ("+STATS.readErr+")"):"")+
-      (STATS.fetchErr?row("Datenabruf",STATS.fetchErr):"")+
-      row("Canvas-Filter",FILTER_OK?"wirkt":"nicht verfügbar")+
-      row("Version",GAME_VERSION)+
-      '<div class="hint" style="margin-top:6px">Farbtest — dieselbe Figur in vier Varianten. '+
-      'Sehen alle gleich aus, wirkt die Färbung auf diesem Gerät nicht:</div>'+
-      '<canvas id="colorTest" width="320" height="90" style="width:100%;max-width:320px;image-rendering:pixelated;'+
-      'background:#15131f;border:1px solid var(--line);border-radius:10px;margin:4px 0 6px"></canvas>'+
-      (missing.length?'<div class="hint" style="color:var(--bad)">Nicht gefunden: '+missing.join(", ")+
-        '.png — liegt der Ordner <b>assets</b> (genau so geschrieben) neben index.html?</div>':
-       loaded===0?'<div class="hint">Grafiken werden noch geladen …</div>':"");
+  /** Beschriftung des Reit-Knopfs für den aktuellen Augenblick */
+  rideLabel(){
+    const h=G.hero;if(!h||!h.mount)return "";
+    if(G.rideT>0)return "Unterwegs im Galopp \u2026";
+    if(G.mountCd>0)return "Bereit in "+Math.ceil(G.mountCd)+" s";
+    if(G.canRide())return "Aufsitzen \u2014 "+fmt(h.mount.skip)+" m überspringen";
+    return G.rideQueued?"Vorgemerkt \u2014 nach dem Kampf (abbrechen)":"Nach dem Kampf aufsitzen";
   },
-  /** Zeichnet eine Gegnerfigur in vier Farbvarianten — Sichtprüfung auf dem Gerät */
-  drawColorTest(){
-    const cv=$("colorTest");if(!cv)return;
-    const c=cv.getContext("2d");c.imageSmoothingEnabled=false;
-    c.clearRect(0,0,cv.width,cv.height);
-    const m=["beast","slime","golem","humanoid"].find(k=>ASSETS[k])||"beast";
-    const sp=SPRITES[m];if(!sp)return;
-    const sets=[[null,null,"Original"],[5,{s:1.2},"Rot"],[120,null,"Grün"],[275,{b:.85},"Violett"]];
-    sets.forEach((q,i)=>{
-      const x=40+i*80,u=Math.min(2.2,70/sp.base*(sp.f||1));
-      drawSprite(c,sp,x,72,u,palette(q[0]===null?ASSET_HUE:q[0],40),false,null,1,q[0]===null?null:q[0],q[1]);
-      c.fillStyle="#a99fd0";c.font="10px monospace";c.textAlign="center";c.fillText(q[2],x,86);
-    });
+  /** Hält den Reit-Knopf aktuell — der Helden-Tab wird sonst nur selten neu gezeichnet */
+  updateRideBtn(){
+    const b=$("btnRide");if(!b||!G.hero||!G.hero.mount)return;
+    const t=this.rideLabel();if(b.textContent!==t)b.textContent=t;
+    const ready=G.canRide(),wait=G.mountCd>0||G.rideT>0;
+    b.disabled=wait;b.classList.toggle("p",ready||G.rideQueued);
   },
   /** Splash zeigen; Antippen, Klick oder Taste überspringt, sonst nach `ms` weiter */
   showSplash(done,ms){
@@ -5447,12 +5446,9 @@ const UI={
         '<small>'+h.mount.d+'</small>'+
         '<small style="color:var(--acc2)">'+h.mount.bt+'</small>'+
         '<div class="btnrow" style="margin-top:7px">'+
-        '<button class="btn'+(ready?" p":"")+'" id="btnRide"'+(ready?"":" disabled")+'>'+
-        (ready?"Aufsitzen \u2014 "+fmt(h.mount.skip)+" m überspringen":
-          (G.state==="walk"?"Bereit in "+rest+" s":"Nur unterwegs möglich"))+
-        '</button></div>'+
+        '<button class="btn" id="btnRide">'+this.rideLabel()+'</button></div>'+
         '<small style="color:var(--dim)">Ein Ritt bringt dich eine Zone tiefer. '+
-        'Die Gegner dort sind stärker.</small></div></div>';
+        'Die Gegner dort sind stärker. Das Tier geht an jeden Nachfolger über.</small></div></div>';
     }
     if(h.boons.length){
       html+='<div class="h3">Wirkende Segen</div>';
@@ -5488,7 +5484,8 @@ const UI={
       ctx.setTransform(1,0,0,1,0,0);
     }
     const rb=$("btnRide");
-    if(rb)rb.onclick=()=>{G.ride();this.renderHero();};
+    if(rb)rb.onclick=()=>{SFX.init();G.rideOrQueue();this.updateRideBtn();};
+    this.updateRideBtn();
     $("tab-hero").querySelectorAll("[data-attr]").forEach(b=>{
       b.onclick=()=>{
         if(h.attrPts<=0)return;
@@ -6543,7 +6540,7 @@ const UI={
     const h=G.hero,s=G.stats;
     const row=(a,b)=>'<div class="row"><span>'+a+'</span><b>'+b+'</b></div>';
     $("tab-sys").innerHTML=
-      '<div class="h3">Grafik</div>'+this.gfxDiagHtml()+
+
       '<div class="h3">Spielstand</div>'+
       '<div class="btnrow"><button class="btn p" id="btnSave">Speichern (JSON-Datei)</button>'+
       '<button class="btn" id="btnImport">JSON einspielen</button>'+
@@ -6962,6 +6959,9 @@ const UI={
       '<div class="hint" style="text-align:center">Davon '+(this._deathBonus||0)+' als Abschlussbonus. '+
       'Gesamt verfügbar: <b style="color:var(--soul)">'+G.shards+' \u2726</b></div>'+
       consecHtml+
+      (h.mount?'<div class="consec done" style="border-color:var(--acc2)"><div class="ctitle" style="color:var(--acc2)">'+
+        h.mount.n+' \u2014 wird automatisch vererbt</div><div class="ceff">'+h.mount.bt+
+        ' \u00B7 Besondere Funde eines Weltenbosses folgen jedem Nachfolger, ohne einen Erbplatz zu belegen.</div></div>':"")+
       '<div class="h3">Vermächtnis — Gegenstände ('+this._heirPick.length+" / "+maxHeir+')</div>'+
       '<div class="hint">Gute Ausrüstung ist selten geworden. Was du hier weitergibst, entscheidet, '+
       'wie weit dein nächster Held kommt — das Erbe ist der eigentliche Fortschritt.</div>'+
